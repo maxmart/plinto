@@ -1,0 +1,50 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Öarna
+description: 'Tre öar att börja med, från vänlig till envis.'
+rev: 3
+synced: {en: 3, de: 2}
+---
+
+import { Column, Columns } from '@/blocks/Columns';
+import { Figure } from '@/blocks/Figure';
+import { Prose } from '@/blocks/Prose';
+
+<Columns id="cols-7f3b8d1e"
+  columns={3}
+  gap={32}
+>
+  <Column id="colu-4a8e2c6f"
+    heading="Aldra"
+  >
+    <Figure id="figu-9b5d3f7a"
+      src="/media/lighthouse.svg"
+      alt="Fyren på Aldra"
+      caption="Den vänliga. Kafé på kajen, sängar ovanpå affären."
+    />
+  </Column>
+  <Column id="colu-8c2f6a4d"
+    heading="Stenholm"
+  >
+    <Figure id="figu-1d7a5b9c"
+      src="/media/tent.svg"
+      alt="Ett tält uppslaget nedanför åsen"
+      caption="Den envisa. Ta med allt; ta med allt tillbaka."
+    />
+  </Column>
+  <Column id="colu-3e9b7d5f"
+    heading="Lågskär"
+  >
+    <Figure id="figu-6f2c8e4a"
+      src="/media/ferry.svg"
+      alt="Färjan som trafikerar Lågskär"
+      caption="Mellantinget. Färjan går två gånger i veckan, om vädret tillåter."
+    />
+  </Column>
+</Columns>
+
+<Prose id="pros-2e9c4a7b"
+  heading="Tre att börja med"
+>
+  Det finns fler, så klart — det finns alltid fler — men de här tre täcker spannet: en som välkomnar dig, en som tolererar dig, och en som överlever din åsikt om den vilket som.
+</Prose>

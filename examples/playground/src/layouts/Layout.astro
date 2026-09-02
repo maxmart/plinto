@@ -1,0 +1,83 @@
+---
+/**
+ * The site's document shell, and the layout every content page names in its
+ * frontmatter (`layout: "@/layouts/Layout.astro"`).
+ *
+ * Pages are plain MDX under src/pages/{lang}/, rendered by Astro itself — the
+ * CMS is not in the rendering path at all. The arrangement below has a
+ * counterpart in src/plinto-preview.tsx, which is what the editor and preview
+ * draw. Change one, change the other.
+ */
+import '@plinto/astro/styles/globals.css';
+import '../assets/styles/global.css';
+import PreviewButton from '@plinto/astro/components/PreviewButton.astro';
+import { localizedPath } from '@plinto/astro/lib/urls';
+import { i18n } from 'virtual:plinto-config';
+
+const SITE_NAME = 'Driftwood';
+
+interface Props {
+  /** Supplied by Astro for any page that names this file as its layout. */
+  frontmatter?: { title?: string; description?: string; lang?: string };
+}
+
+const { frontmatter } = Astro.props;
+
+// The routing locale is the first path segment — /sv/visiting/ — which is
+// also how the pages are laid out on disk (src/pages/{lang}/{slug}.mdx).
+const segments = Astro.url.pathname.split('/').filter(Boolean);
+const routingLang = i18n.locales.includes(segments[0]) ? segments[0] : i18n.defaultLocale;
+
+// Content language ≠ routing locale: a page may declare `lang: de` in its
+// frontmatter (a German guest piece on the English locale). The declaration
+// wins on <html lang>; the routing locale still picks the partials.
+const lang = frontmatter?.lang || routingLang;
+
+const title = frontmatter?.title || SITE_NAME;
+const documentTitle = title !== SITE_NAME ? `${title} - ${SITE_NAME}` : title;
+
+/**
+ * Partials are MDX too, and deliberately live outside src/pages/ — anything
+ * under that directory is a route, and /sv/TopBar/ is not a page. Dynamic
+ * import because `routingLang` is a runtime value; a missing file fails the
+ * build, which is correct — the language matrix has no holes.
+ */
+const TopBar = (await import(`../partials/${routingLang}/TopBar.mdx`)).default;
+const Footer = (await import(`../partials/${routingLang}/Footer.mdx`)).default;
+---
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{documentTitle}</title>
+    {frontmatter?.description && <meta name="description" content={frontmatter.description} />}
+  </head>
+  <body>
+    {TopBar && (
+      <header>
+        <TopBar />
+      </header>
+    )}
+    <main>
+      <slot />
+    </main>
+    {Footer && (
+      <footer class="pg-footer">
+        <Footer />
+      </footer>
+    )}
+    {/* The language switcher, built from the library's URL rule: the same
+        page with its locale segment swapped. */}
+    <nav class="pg-langs" aria-label="Languages">
+      {i18n.locales.map((l: string) => (
+        <a href={localizedPath(Astro.url.pathname, l)} aria-current={l === routingLang ? 'true' : undefined}>{l}</a>
+      ))}
+    </nav>
+    <style>
+      .pg-langs { position: fixed; top: 12px; right: 12px; display: flex; gap: 8px; font-size: 0.85rem; }
+      .pg-langs a { color: var(--ink-soft); text-decoration: none; text-transform: uppercase; }
+      .pg-langs a[aria-current='true'] { color: var(--brand); font-weight: 700; }
+    </style>
+    <PreviewButton />
+  </body>
+</html>

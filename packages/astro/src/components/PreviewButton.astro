@@ -1,0 +1,159 @@
+---
+/**
+ * The one thing the client needs before it can decide to do nothing.
+ *
+ * This button is for an editor with an unpublished commit in a repository
+ * cloned into their own browser. A visitor has no such clone, so the script
+ * below bails on its first check — but it used to `import` the config to make
+ * that check, and an import is not free: it pulled the config module, the
+ * block-import map and locale-dir into a chunk every visitor downloaded.
+ *
+ * So the database name travels as an attribute, rendered here at build time,
+ * and everything else the script needs loads only once the check has passed.
+ */
+import { storage } from 'virtual:plinto-config';
+---
+
+<a id="preview-btn" href="" data-fs-db={storage.fsDbName} class="fixed bottom-20 right-6 bg-amber-500 hover:bg-amber-600 text-black px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 transition-colors z-40 font-medium" style="display:none">
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+  Preview Changes
+</a>
+
+<script>
+  // Deliberately no static imports. Everything this needs before it can rule
+  // itself out comes from the DOM; everything after loads on demand. See the
+  // frontmatter above.
+  (async () => {
+    const debug = new URLSearchParams(window.location.search).has('preview-debug');
+    const log = (...a: unknown[]) => { if (debug) console.log('[preview-btn]', ...a); };
+    const btn = document.getElementById('preview-btn') as HTMLAnchorElement | null;
+    if (!btn) return;
+    const fsDbName = btn.dataset.fsDb;
+    if (!fsDbName) { btn.remove(); return; }
+
+    const path = window.location.pathname;
+    log('path:', path);
+    if (path.includes('/admin') || path.includes('/edit') || path.startsWith('/preview')) {
+      log('bail: on admin/edit/preview route');
+      btn.remove();
+      return;
+    }
+
+    // Quick IDB check — does the configured fs database have any stores?
+    // Must not call indexedDB.open() on a missing database: open() CREATES an
+    // empty store-less db, which lightning-fs then finds already at its
+    // version, skips onupgradeneeded, and fails every transaction with
+    // NotFoundError — permanently breaking clone until the db is deleted.
+    const repoExists = await (async () => {
+      if (indexedDB.databases) {
+        const dbs = await indexedDB.databases();
+        if (!dbs.some(d => d.name === fsDbName)) return false;
+      }
+      return new Promise<boolean>(resolve => {
+        const req = indexedDB.open(fsDbName);
+        req.onerror = () => resolve(false);
+        req.onsuccess = () => {
+          const db = req.result;
+          const has = db.objectStoreNames.length > 0;
+          log('idb stores:', Array.from(db.objectStoreNames));
+          db.close();
+          // Clean up a store-less db — whether created by this open() (on
+          // browsers without indexedDB.databases) or left by an older build.
+          if (!has) indexedDB.deleteDatabase(fsDbName);
+          resolve(has);
+        };
+      });
+    })();
+
+    log('repoExists:', repoExists);
+    if (!repoExists) { log('bail: no repo in IDB'); btn.remove(); return; }
+
+    // Past the point where a visitor stops. Only someone with a clone in this
+    // browser gets here, so the config and the locale rule can load now —
+    // along with isomorphic-git, which was already deferred.
+    try {
+      const { Buffer } = await import(/* @vite-ignore */ 'buffer');
+      if (!globalThis.Buffer) globalThis.Buffer = Buffer;
+
+      const [git, LFS, cfg, { localeDir }] = await Promise.all([
+        import(/* @vite-ignore */ 'isomorphic-git'),
+        import(/* @vite-ignore */ '@isomorphic-git/lightning-fs'),
+        import('virtual:plinto-config'),
+        import('../lib/urls'),
+      ]);
+      const { content: contentConfig, git: gitConfig, i18n, storage } = cfg;
+
+      const fs = new LFS.default(fsDbName);
+      const dir = storage.repoDir;
+
+      await fs.promises.stat(`${dir}/.git`);
+      log('.git exists at', dir);
+
+      const localOid = await git.default.resolveRef({ fs, dir, ref: 'HEAD' });
+      const remoteOid = await git.default.resolveRef({ fs, dir, ref: `refs/remotes/origin/${gitConfig.defaultBranch}` });
+      log('local / remote oid:', localOid.slice(0, 7), '/', remoteOid.slice(0, 7));
+
+      if (localOid === remoteOid) { log('bail: HEAD === origin/' + gitConfig.defaultBranch); btn.remove(); return; }
+
+      // Walk back from HEAD one commit at a time via parent pointers
+      const parts = path.replace(/\/$/, '').split('/').filter(Boolean);
+      // Astro's i18n layout: a leading segment that names a locale is one,
+      // anything else is the unprefixed default locale's page path.
+      const hasLocaleSeg = i18n.locales.includes(parts[0]);
+      const lang = hasLocaleSeg ? parts[0] : i18n.defaultLocale;
+      const slug = (hasLocaleSeg ? parts.slice(1) : parts).join('/');
+      const langDir = localeDir(lang) ? `${localeDir(lang)}/` : '';
+      const subdir = contentConfig.siteSubdir ? `${contentConfig.siteSubdir}/` : '';
+      const pagePath = `${subdir}${contentConfig.pagesDir}/${langDir}${slug || 'index'}.mdx`;
+      log('looking for file:', pagePath);
+
+      let found = false;
+      let oid = localOid;
+      const visited: Array<{ oid: string; msg: string; nChanges: number; hasPage: boolean }> = [];
+      while (oid !== remoteOid) {
+        const { commit } = await git.default.readCommit({ fs, dir, oid });
+        const parentOid = commit.parent[0];
+        if (!parentOid) { log('bail: hit root commit without matching remote'); break; }
+
+        const changes = await git.default.walk({
+          fs, dir,
+          trees: [git.TREE({ ref: parentOid }), git.TREE({ ref: oid })],
+          map: async (filepath: string, [a, b]: any[]) => {
+            if (!a && !b) return;
+            const aOid = a ? await a.oid() : null;
+            const bOid = b ? await b.oid() : null;
+            if (aOid !== bOid) return filepath;
+          },
+        });
+
+        visited.push({
+          oid: oid.slice(0, 7),
+          msg: commit.message.split('\n')[0],
+          nChanges: changes.length,
+          hasPage: changes.includes(pagePath),
+        });
+
+        if (changes.includes(pagePath)) { found = true; break; }
+        oid = parentOid;
+      }
+
+      if (debug) console.table(visited);
+      log('found:', found);
+
+      if (found) {
+        const params = new URLSearchParams({ lang });
+        if (slug) params.set('slug', slug);
+        btn.href = `/plinto/preview/?${params.toString()}`;
+        btn.style.display = '';
+      } else {
+        btn.remove();
+      }
+    } catch (err) {
+      log('bail: exception', err);
+      btn.remove();
+    }
+  })();
+</script>

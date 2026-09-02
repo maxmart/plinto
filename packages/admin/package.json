@@ -1,0 +1,74 @@
+{
+  "name": "@plinto/admin",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Plinto's editing application: the admin, the Puck editor over MDX, and everything a person clicks — with no opinion about the site generator underneath",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxmart/plinto.git",
+    "directory": "packages/admin"
+  },
+  "keywords": [
+    "cms",
+    "admin",
+    "mdx",
+    "puck",
+    "editor"
+  ],
+  "files": [
+    "src",
+    "!src/**/__tests__",
+    "!src/test",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./*": "./src/*.ts",
+    "./*.tsx": "./src/*.tsx"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@plinto/core": "^0.1.0",
+    "@mdx-js/mdx": "^3.1.1",
+    "@puckeditor/core": "^0.21.1",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@tiptap/extension-image": "^3.22.4",
+    "@tiptap/react": "^3.22.4",
+    "@tiptap/starter-kit": "^3.22.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "estree-util-is-identifier-name": "^3.0.0",
+    "gray-matter": "^4.0.3",
+    "mime-types": "^2.1.35",
+    "react-markdown": "^10.1.0",
+    "remark": "^15.0.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "tailwind-merge": "^3.5.0",
+    "tiptap-markdown": "^0.9.0",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2",
+    "unified": "^11.0.5"
+  },
+  "optionalDependencies": {
+    "@fortawesome/pro-light-svg-icons": "^7.3.1"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

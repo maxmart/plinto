@@ -1,0 +1,50 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Die Inseln
+description: 'Drei Inseln für den Anfang, von freundlich bis stur.'
+rev: 2
+synced: {en: 3, sv: 3}
+---
+
+import { Column, Columns } from '@/blocks/Columns';
+import { Figure } from '@/blocks/Figure';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-2e9c4a7b"
+  heading="Drei für den Anfang"
+>
+  Es gibt mehr, natürlich — es gibt immer mehr — aber diese drei decken die Spannweite ab: eine, die Sie willkommen heißt, eine, die Sie duldet, und eine, die Ihre Meinung über sie so oder so überdauern wird.
+</Prose>
+
+<Columns id="cols-7f3b8d1e"
+  columns={3}
+  gap={32}
+>
+  <Column id="colu-4a8e2c6f"
+    heading="Aldra"
+  >
+    <Figure id="figu-9b5d3f7a"
+      src="/media/lighthouse.svg"
+      alt="Der Leuchtturm von Aldra"
+      caption="Die freundliche. Café am Kai, Betten über dem Laden."
+    />
+  </Column>
+  <Column id="colu-8c2f6a4d"
+    heading="Stenholm"
+  >
+    <Figure id="figu-1d7a5b9c"
+      src="/media/tent.svg"
+      alt="Ein Zelt unterhalb des Kamms"
+      caption="Die sture. Alles mitbringen; alles wieder mitnehmen."
+    />
+  </Column>
+  <Column id="colu-3e9b7d5f"
+    heading="Lågskär"
+  >
+    <Figure id="figu-6f2c8e4a"
+      src="/media/ferry.svg"
+      alt="Die Fähre nach Lågskär"
+      caption="Die dazwischen. Die Fähre kommt zweimal die Woche, wenn das Wetter es zulässt."
+    />
+  </Column>
+</Columns>

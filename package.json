@@ -1,0 +1,11 @@
+{
+  "name": "plinto-monorepo",
+  "private": true,
+  "packageManager": "npm@11.13.0",
+  "workspaces": ["packages/*", "examples/*"],
+  "scripts": {
+    "test": "npm test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build --workspace=examples/playground"
+  }
+}

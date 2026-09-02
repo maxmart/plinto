@@ -1,0 +1,49 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Field notes
+description: 'Tides, temperatures and the notation we keep them in.'
+rev: 2
+synced: {sv: 2, de: 2}
+---
+
+import { Callout } from '@/blocks/Callout';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-7c4a9e2f"
+  heading="Reading the water"
+>
+  The rule of thumb from the Åsvik pilots: anything \< 10 °C wants a wetsuit, anything \< 4 °C wants a different plan. The öre-sized jellyfish of late Küstensommer are harmless; the größe of the swell is not.
+
+  Before any swim, in order:
+
+  1. Check the tide table below
+     - the painted one on the boathouse wall is older but not wronger
+  2. Check the flag on the harbour mast
+     1. green means the pilots approve
+     2. no flag means nobody has looked, which is not the same thing
+  3. Tell someone with a kettle
+     - they will have it on by the time you are back
+
+  | Station | High water | Low water | Range |
+  | --- | --- | --- | --- |
+  | Aldra quay | 06:41 | 12:58 | 0.4 m |
+  | Lågskär light | 07:03 | 13:20 | 0.3 m |
+  | Stenholm sound | 07:19 | 13:37 | 0.5 m |
+
+  The harbour light is the reference for every bearing in these notes:
+
+  ![The harbour light at Aldra](/media/lighthouse.svg)
+</Prose>
+
+<Callout id="call-9e2d6b4a"
+  tone="tip"
+>
+  The tide clock on the noticeboard runs on this, verbatim — do not translate the code, the sea does not speak German either:
+
+  ```python
+  def next_high(now, station):
+      # lunar day: 24 h 50 min, halved for the semi-diurnal tide
+      period = (24 * 60 + 50) / 2
+      return station.last_high + timedelta(minutes=period)
+  ```
+</Callout>

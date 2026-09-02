@@ -1,0 +1,53 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Drivved — anteckningar från små öar
+description: En fälthandbok om att besöka de små öar som ingen skriver guider om.
+rev: 3
+synced: {en: 4, de: 2}
+---
+
+import { Column, Columns } from '@/blocks/Columns';
+import { Hero } from '@/blocks/Hero';
+import { LinkButton } from '@/blocks/LinkButton';
+import { Prose } from '@/blocks/Prose';
+
+<Hero id="hero-4e7c2a9b"
+  title="Anteckningar från små öar"
+  tagline="De med en enda kaj, en affär som håller sina egna öppettider och en fyr som fortfarande behövs."
+  image="/media/lighthouse.svg"
+  imageAlt="En fyr med tänd lykta"
+  ctaLabel="Möt öarna"
+  ctaHref="/sv/islands"
+/>
+
+<Prose id="pros-8b1d4f6a"
+  heading="Varför små öar?"
+>
+  Stora öar har flygplatser, tidtabeller och egna åsikter. Små öar har en färja som går när skepparen är redo, en anslagstavla som är det närmaste man kommer en dagstidning, och väder som bestämmer dina planer åt dig. Den här handboken handlar om den andra sorten.
+
+  Vi har fört de här anteckningarna i flera år, först i en plåtlåda ombord och numera här. De är egensinniga, ibland inaktuella, och skrivna från kajen snarare än från ett kontor. När en anteckning säger emot havet — lita på havet.
+
+  Börja med öarna själva, och läs sedan om hur man hälsar på utan att vara till besvär — de två sidorna nedan är snabbkursen.
+</Prose>
+
+<Columns id="cols-3c9e5b2d"
+  columns={2}
+  gap={40}
+>
+  <Column id="colu-1a6f8c3e"
+    heading="Planera överfarten"
+  >
+    <LinkButton id="lbtn-9d2b7e4f"
+      label="Att besöka en ö"
+      href="/sv/visiting"
+    />
+  </Column>
+  <Column id="colu-5e3a9d1b"
+    heading="Vet vad du ska ta med"
+  >
+    <LinkButton id="lbtn-2c8f4a6d"
+      label="Packlistan"
+      href="/sv/packing"
+    />
+  </Column>
+</Columns>

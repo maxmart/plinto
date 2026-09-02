@@ -1,0 +1,41 @@
+# Plinto depends on @obelum/core and @obelum/translator-claude, which are not
+# on npm yet. Until they are, CI reproduces the local workspace: both repos
+# checked out side by side under one throwaway npm workspace root, so the
+# sites develop and test against Obelum's source. Once Obelum is published,
+# the obelum checkout and the root package.json go and this becomes `npm ci`.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: plinto
+      - uses: actions/checkout@v4
+        with:
+          repository: maxmart/obelum
+          path: obelum
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: workspace root spanning both repos
+        run: |
+          cat > package.json <<'JSON'
+          { "name": "ci-workspace", "private": true,
+            "workspaces": ["obelum/packages/*", "plinto/packages/*", "plinto/examples/*"] }
+          JSON
+      - run: npm install
+      - run: npm run build --workspaces --if-present --prefix obelum
+        working-directory: obelum
+      - run: npm test
+        working-directory: plinto
+      - run: npm run typecheck
+        working-directory: plinto
+      - run: npm run build --workspace=examples/playground
+        working-directory: plinto

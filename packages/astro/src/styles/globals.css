@@ -1,0 +1,120 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+    font-family: Arial, Helvetica, sans-serif;
+  }
+}
+
+/*
+ * Site header shell, shared by the site's own layout and the Puck editor's
+ * topbar preview so the two can't drift apart. The library renders this class
+ * only in the editor and preview; the real page's markup is the site's.
+ *
+ * The library owns no design here — every value is a --plinto-header-* variable
+ * whose default reproduces the plain bordered bar this used to be. A site tunes
+ * it by setting the variables on .plinto-header from one of its own blocks.
+ *
+ * padding-inline centres the content at --plinto-header-max-width without
+ * needing an inner wrapper element: the gutter is whatever's left over either
+ * side, plus the requested padding. With the default max-width of 100% the
+ * leftover is zero and it collapses to the plain padding.
+ */
+.plinto-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--plinto-header-bg, #fff);
+  border-bottom: var(--plinto-header-border-width, 1px) solid var(--plinto-header-border, #e5e7eb);
+  box-shadow: var(--plinto-header-shadow, none);
+  min-height: var(--plinto-header-min-height, auto);
+  padding-block: var(--plinto-header-padding-block, 16px);
+  padding-inline: calc(
+    max(0px, (100% - var(--plinto-header-max-width, 100%)) / 2)
+    + var(--plinto-header-padding-inline, 24px)
+  );
+}
+
+/**
+ * Editor canvas only: don't reserve a scrollbar track.
+ *
+ * Puck renders the page in an iframe sized to the chosen viewport, and that
+ * iframe reserves ~15px for a vertical scrollbar it never paints. Everything
+ * on the page is therefore laid out 15px short of the canvas edge, which is
+ * invisible for ordinary content but obvious on anything full-bleed: a header
+ * band stops in mid-air with a white strip beside it, and it reads as the
+ * block being broken rather than the preview being inset.
+ *
+ * A real browser paints its scrollbar in that track, so the published page is
+ * unaffected and must stay that way — hence the marker. data-puck-overlay-portal
+ * is injected by the editor into every rendered component and exists nowhere in
+ * the built output, so this cannot leak onto a real page and take away a
+ * scrollbar someone needs.
+ */
+html:has([data-puck-overlay-portal]) { scrollbar-width: none; }
+html:has([data-puck-overlay-portal])::-webkit-scrollbar { width: 0; height: 0; }

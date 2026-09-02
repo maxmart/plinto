@@ -1,0 +1,50 @@
+---
+layout: '@/layouts/Layout.astro'
+title: The islands
+description: 'Three islands to start with, from gentle to stubborn.'
+rev: 3
+synced: {sv: 3, de: 2}
+---
+
+import { Column, Columns } from '@/blocks/Columns';
+import { Figure } from '@/blocks/Figure';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-2e9c4a7b"
+  heading="Three to start with"
+>
+  There are more, of course — there are always more — but these three cover the range: one that welcomes you, one that tolerates you, and one that will outlast your opinion of it either way.
+</Prose>
+
+<Columns id="cols-7f3b8d1e"
+  columns={3}
+  gap={32}
+>
+  <Column id="colu-4a8e2c6f"
+    heading="Aldra"
+  >
+    <Figure id="figu-9b5d3f7a"
+      src="/media/lighthouse.svg"
+      alt="The lighthouse of Aldra"
+      caption="The gentle one. Café on the quay, beds above the shop."
+    />
+  </Column>
+  <Column id="colu-8c2f6a4d"
+    heading="Stenholm"
+  >
+    <Figure id="figu-1d7a5b9c"
+      src="/media/tent.svg"
+      alt="A tent pitched below the ridge"
+      caption="The stubborn one. Bring everything; take everything back."
+    />
+  </Column>
+  <Column id="colu-3e9b7d5f"
+    heading="Lågskär"
+  >
+    <Figure id="figu-6f2c8e4a"
+      src="/media/ferry.svg"
+      alt="The ferry that serves Lågskär"
+      caption="The in-between. The ferry calls twice a week, weather permitting."
+    />
+  </Column>
+</Columns>

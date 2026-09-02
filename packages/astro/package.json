@@ -1,0 +1,104 @@
+{
+  "name": "@plinto/astro",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Self-editing Astro CMS library: visual editor, browser git, translation sync",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxmart/plinto.git",
+    "directory": "packages/astro"
+  },
+  "keywords": [
+    "astro",
+    "astro-integration",
+    "cms",
+    "mdx",
+    "puck",
+    "isomorphic-git",
+    "i18n"
+  ],
+  "files": [
+    "src",
+    "!src/**/__tests__",
+    "!src/test",
+    "!src/**/tmp-*",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    "./config": "./src/config.ts",
+    "./integration": "./src/integration.ts",
+    "./middleware": "./src/middleware.ts",
+    "./preview": "./src/preview.tsx",
+    "./styles/globals.css": "./src/styles/globals.css",
+    "./components/PreviewButton.astro": "./src/components/PreviewButton.astro",
+    "./lib/ops": "./src/lib/ops/index.ts",
+    "./lib/urls": "./src/lib/urls.ts",
+    "./lib/hooks/usePages": "./src/lib/hooks/usePages.ts",
+    "./lib/hooks/useCollection": "./src/lib/hooks/useCollection.ts",
+    "./lib/hooks/server-pages": "./src/lib/hooks/server-pages.ts",
+    "./lib/hooks/server-collection": "./src/lib/hooks/server-collection.ts",
+    "./routes/admin.astro": "./src/routes/admin.astro",
+    "./routes/edit.astro": "./src/routes/edit.astro",
+    "./routes/edit-collection.astro": "./src/routes/edit-collection.astro",
+    "./routes/preview.astro": "./src/routes/preview.astro",
+    "./routes/api/files": "./src/routes/api/files.ts",
+    "./routes/api/git": "./src/routes/api/git.ts",
+    "./lib/listing/summary": "./src/lib/listing/summary.ts"
+  },
+  "dependencies": {
+    "@plinto/admin": "^0.1.0",
+    "@plinto/core": "^0.1.0",
+    "@isomorphic-git/lightning-fs": "^4.6.2",
+    "@mdx-js/mdx": "^3.1.1",
+    "@puckeditor/core": "^0.21.1",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@tiptap/extension-image": "^3.22.4",
+    "@tiptap/react": "^3.22.4",
+    "@tiptap/starter-kit": "^3.22.4",
+    "buffer": "^6.0.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "estree-util-is-identifier-name": "^3.0.0",
+    "gray-matter": "^4.0.3",
+    "isomorphic-git": "^1.36.1",
+    "mime-types": "^2.1.35",
+    "react-markdown": "^10.1.0",
+    "remark": "^15.0.1",
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-html": "^16.0.1",
+    "remark-mdx": "^3.1.1",
+    "remark-parse": "^11.0.0",
+    "tailwind-merge": "^3.5.0",
+    "tiptap-markdown": "^0.9.0",
+    "turndown": "^7.2.2",
+    "turndown-plugin-gfm": "^1.0.2",
+    "unified": "^11.0.5"
+  },
+  "peerDependencies": {
+    "@astrojs/react": "^5.0.0",
+    "astro": "^6.0.0 || ^7.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/mime-types": "^2.1.4",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/turndown": "^5.0.6",
+    "@vitest/coverage-v8": "^3.2.4",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

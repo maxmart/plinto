@@ -1,0 +1,30 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Visiting an island
+description: 'When to go, how to behave, and what the weather has to say about both.'
+rev: 5
+synced: {sv: 3, de: 2}
+---
+
+import { Callout } from '@/blocks/Callout';
+import Faq from '@/blocks/Faq.astro';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-9a4d7f2b"
+  heading="When to go"
+>
+  June is polite, July is crowded, August is the local secret. September is better than all three if you can read a forecast, and the shoulder months belong to the birds and to the people who fix things.
+
+  Whenever you go, tell the harbour office when you arrive. Not because anyone checks — because when the fog comes in, the list of who is on the island is the only list there is.
+</Prose>
+
+<Faq id="faq-5c8e1b3d"
+  heading="The questions everyone asks"
+  items={[{"question":"Do I need to book the ferry?","answer":"No — you need to be on the quay fifteen minutes early. The ferry has never taken a booking and is not going to start with you."},{"question":"Is there a cash machine?","answer":"There is a shop that takes cards and a ferryman who prefers coins.\nPlan accordingly."},{"question":"Can I drink the well water?","answer":"On Aldra, yes. On Stenholm, ask first. On Lågskär, bring your own and offer some to the lighthouse keeper."}]}
+/>
+
+<Callout id="call-2d7b9e4f"
+  tone="warning"
+>
+  **The wind veto.** Any plan involving a small boat carries an unwritten clause: the wind may cancel it without notice. Arguing with the skipper about this clause identifies you as someone who has not read it.
+</Callout>

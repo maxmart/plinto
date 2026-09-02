@@ -1,0 +1,28 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Eine Insel besuchen
+description: 'Wann man fährt, wie man sich benimmt, und was das Wetter dazu sagt.'
+rev: 2
+synced: {en: 3, sv: 2}
+---
+
+import { Callout } from '@/blocks/Callout';
+import Faq from '@/blocks/Faq.astro';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-9a4d7f2b"
+  heading="Wann man fährt"
+>
+  Der Juni ist höflich, der Juli ist voll, der August ist das Geheimnis der Einheimischen. Der September schlägt alle drei, wenn Sie eine Wettervorhersage lesen können.
+</Prose>
+
+<Faq id="faq-5c8e1b3d"
+  heading="Die Fragen, die alle stellen"
+  items={[{"question":"Muss ich die Fähre buchen?","answer":"Nein — Sie müssen eine Viertelstunde vorher am Kai stehen. Die Fähre hat noch nie eine Buchung angenommen und fängt nicht bei Ihnen damit an."},{"question":"Gibt es einen Geldautomaten?","answer":"Es gibt einen Laden, der Karten nimmt, und einen Fährmann, der Münzen bevorzugt.\nPlanen Sie entsprechend."}]}
+/>
+
+<Callout id="call-2d7b9e4f"
+  tone="warning"
+>
+  **Das Wind-Veto.** Jeder Plan mit einem kleinen Boot trägt eine ungeschriebene Klausel: Der Wind darf ihn ohne Vorwarnung streichen.
+</Callout>

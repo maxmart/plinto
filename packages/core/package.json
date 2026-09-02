@@ -1,0 +1,53 @@
+{
+  "name": "@plinto/core",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Plinto's engine: the content model, browser-and-dev storage, the operations layer, and the agents — with no opinion about the site generator on top",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxmart/plinto.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "cms",
+    "git",
+    "mdx",
+    "isomorphic-git",
+    "lightning-fs"
+  ],
+  "files": [
+    "src",
+    "!src/**/__tests__",
+    "!src/test",
+    "README.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": "./src/index.ts",
+    "./storage": "./src/storage/index.ts",
+    "./ops": "./src/ops/index.ts",
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.120.0",
+    "@obelum/core": "^0.1.0",
+    "@isomorphic-git/lightning-fs": "^4.6.2",
+    "buffer": "^6.0.3",
+    "gray-matter": "^4.0.3",
+    "isomorphic-git": "^1.36.1",
+    "mime-types": "^2.1.35",
+    "@obelum/translator-claude": "^0.1.0"
+  },
+  "devDependencies": {
+    "fake-indexeddb": "^6.2.2",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

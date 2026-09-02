@@ -1,0 +1,35 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Att besöka en ö
+description: 'När man ska åka, hur man beter sig, och vad vädret har att säga om båda.'
+rev: 4
+synced: {en: 4, de: 2}
+---
+
+import { Callout } from '@/blocks/Callout';
+import Faq from '@/blocks/Faq.astro';
+import { Prose } from '@/blocks/Prose';
+import { Testimonial } from '@/blocks/Testimonial';
+
+<Prose id="pros-9a4d7f2b"
+  heading="När man ska åka"
+>
+  Juni är artig, juli är trång, augusti är den lokala hemligheten. September slår alla tre om du kan läsa en prognos, och skuldermånaderna tillhör fåglarna och dem som lagar saker.
+</Prose>
+
+<Faq id="faq-5c8e1b3d"
+  heading="Frågorna alla ställer"
+  items={[{"question":"Måste jag boka färjan?","answer":"Nej — du måste stå på kajen en kvart i förväg. Färjan har aldrig tagit emot en bokning och tänker inte börja med dig."},{"question":"Finns det en bankomat?","answer":"Det finns en affär som tar kort och en färjkarl som föredrar mynt.\nPlanera därefter."},{"question":"Kan man dricka brunnsvattnet?","answer":"På Aldra, ja. På Stenholm, fråga först. På Lågskär, ta med eget och bjud fyrvaktaren."}]}
+/>
+
+<Testimonial id="test-6b1f4d8a"
+  quote="Vi kom för en helg och stannade i nio dagar. Färjan gick inte, och till slut ville vi inte heller."
+  name="Familjen Lindqvist"
+  role="Återkommande strandsatta"
+/>
+
+<Callout id="call-2d7b9e4f"
+  tone="warning"
+>
+  **Vindens veto.** Varje plan som involverar en liten båt bär på en oskriven klausul: vinden kan ställa in den utan förvarning. Att bråka med skepparen om klausulen avslöjar dig som en som inte läst den.
+</Callout>

@@ -1,0 +1,53 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Driftwood — notes from small islands
+description: A field guide to visiting the small islands nobody writes guides about.
+rev: 4
+synced: {sv: 3, de: 2}
+---
+
+import { Column, Columns } from '@/blocks/Columns';
+import { Hero } from '@/blocks/Hero';
+import { LinkButton } from '@/blocks/LinkButton';
+import { Prose } from '@/blocks/Prose';
+
+<Hero id="hero-4e7c2a9b"
+  title="Notes from small islands"
+  tagline="The ones with a single quay, one shop that keeps its own hours, and a lighthouse that still matters."
+  image="/media/lighthouse.svg"
+  imageAlt="A lighthouse with its beam lit"
+  ctaLabel="Meet the islands"
+  ctaHref="/en/islands"
+/>
+
+<Prose id="pros-8b1d4f6a"
+  heading="Why small islands?"
+>
+  Big islands have airports, timetables and opinions of their own. Small islands have a ferry that leaves when the skipper is ready, a noticeboard that is the closest thing to a newspaper, and weather that decides your plans for you. This guide is about the second kind.
+
+  We have been keeping these notes for years, first in a tin box on the boat and now here. They are opinionated, occasionally out of date, and written from the quay rather than from an office. When a note disagrees with the sea, trust the sea.
+
+  Start with the islands themselves, then read up on how to visit without annoying anyone — the two pages below are the short course.
+</Prose>
+
+<Columns id="cols-3c9e5b2d"
+  columns={2}
+  gap={40}
+>
+  <Column id="colu-1a6f8c3e"
+    heading="Plan the crossing"
+  >
+    <LinkButton id="lbtn-9d2b7e4f"
+      label="Visiting an island"
+      href="/en/visiting"
+    />
+  </Column>
+  <Column id="colu-5e3a9d1b"
+    heading="Know what to bring"
+  >
+    <LinkButton id="lbtn-2c8f4a6d"
+      label="The packing list"
+      href="/en/packing"
+    />
+  </Column>
+</Columns>

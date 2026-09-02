@@ -1,0 +1,55 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Preise und Karten
+description: 'Was die Fähre kostet, und warum sich die Zahlen nicht übersetzen lassen.'
+rev: 2
+synced: {en: 2, sv: 1}
+---
+
+import { Column, Columns } from '@/blocks/Columns';
+import { Figure } from '@/blocks/Figure';
+import { LinkButton } from '@/blocks/LinkButton';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-3b7e9f4c"
+  heading="Preise und Karten"
+>
+  Die Fähre nimmt Karten, Münzen und — bei Insulanern mit dreißig Jahren auf dem Buckel — ein Nicken. Die deutsche Redaktion fand die große Bühne unnötig; hier stehen die Fakten in zwei Spalten.
+</Prose>
+
+<Columns id="cols-6d1a8e2b"
+  columns={2}
+  gap={40}
+>
+  <Column id="colu-9f4c7a3e"
+    heading="Die Fähre"
+  >
+    <Figure id="figu-2b8d5f1c"
+      src="/media/ferry.svg"
+      alt="Die Fähre, schmeichelhaft gezeichnet"
+      caption="Zweimal täglich im Sommer, zweimal wöchentlich im Winter."
+    />
+  </Column>
+  <Column id="colu-7e2a4c9f"
+    heading="Der Besuch"
+  >
+    <LinkButton id="lbtn-5c1f8b3d"
+      label="Besuch planen"
+      href="/de/visiting"
+    />
+  </Column>
+</Columns>
+
+<Prose id="pros-5a9c2e7d"
+  heading="Die Tafel an der Hafenmauer"
+>
+  Das sind die Zahlen, die an der Hafenmauer stehen, exakt wiedergegeben. Sie ändern sich einmal im Jahr, per Abstimmung, auf der Versammlung, zu der angeblich niemand geht.
+
+  | Route | Single | Return | Bicycle |
+  | --- | --- | --- | --- |
+  | Mainland – Aldra | 60 kr | 100 kr | 20 kr |
+  | Aldra – Lågskär | 40 kr | 70 kr | 15 kr |
+  | Mainland – Stenholm | 90 kr | 150 kr | 25 kr |
+
+  Kinder unter zwölf fahren umsonst — ebenso alles, was in eine Tasche passt und dort bleibt.
+</Prose>

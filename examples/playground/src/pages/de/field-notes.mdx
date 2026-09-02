@@ -1,0 +1,49 @@
+---
+layout: '@/layouts/Layout.astro'
+title: Feldnotizen
+description: 'Gezeiten, Temperaturen und die Notation, in der wir sie festhalten.'
+rev: 2
+synced: {en: 2, sv: 2}
+---
+
+import { Callout } from '@/blocks/Callout';
+import { Prose } from '@/blocks/Prose';
+
+<Prose id="pros-7c4a9e2f"
+  heading="Das Wasser lesen"
+>
+  Die Faustregel der Lotsen von Åsvik: alles \< 10 °C verlangt einen Neoprenanzug, alles \< 4 °C verlangt einen anderen Plan. Die öre-großen Quallen des Spätsommers sind harmlos; die Größe der Dünung ist es nicht.
+
+  Vor jedem Bad, der Reihe nach:
+
+  1. Die Gezeitentafel unten prüfen
+     - die gemalte an der Bootshauswand ist älter, aber nicht falscher
+  2. Die Flagge am Hafenmast prüfen
+     1. Grün heißt, die Lotsen sind einverstanden
+     2. keine Flagge heißt, niemand hat nachgesehen — was nicht dasselbe ist
+  3. Jemandem mit einem Wasserkocher Bescheid sagen
+     - er ist an, wenn Sie zurück sind
+
+  | Station | High water | Low water | Range |
+  | --- | --- | --- | --- |
+  | Aldra quay | 06:41 | 12:58 | 0.4 m |
+  | Lågskär light | 07:03 | 13:20 | 0.3 m |
+  | Stenholm sound | 07:19 | 13:37 | 0.5 m |
+
+  Das Hafenfeuer ist die Referenz für jede Peilung in diesen Notizen:
+
+  ![Das Hafenfeuer von Aldra](/media/lighthouse.svg)
+</Prose>
+
+<Callout id="call-9e2d6b4a"
+  tone="tip"
+>
+  Die Gezeitenuhr am schwarzen Brett läuft wortwörtlich hiermit — den Code nicht übersetzen, das Meer spricht auch kein Deutsch:
+
+  ```python
+  def next_high(now, station):
+      # lunar day: 24 h 50 min, halved for the semi-diurnal tide
+      period = (24 * 60 + 50) / 2
+      return station.last_high + timedelta(minutes=period)
+  ```
+</Callout>
