@@ -368,6 +368,26 @@ export default function plinto(config: PlintoConfig): AstroIntegration {
           // flips to SSR keeps Astro's default protection.
           ...(command === 'dev' ? { security: { checkOrigin: false } } : {}),
           vite: {
+            // Dev only. Vite serves files from outside the project root only
+            // under an allowlist, and its default stops at the nearest
+            // package.json with a `workspaces` field. In a development shell
+            // where this repository and the site sit under an outer npm
+            // workspace, the hoisted node_modules is above that, so the
+            // editor's islands 403 on @astrojs/react's client. Allowing the
+            // directory that actually holds the dependencies is a no-op for
+            // a normal install (it is the site root) and the fix for the
+            // shell. The site root is repeated because setting `allow`
+            // replaces Vite's default rather than extending it.
+            ...(command === 'dev' ? {
+              server: {
+                fs: {
+                  allow: [
+                    projectRoot,
+                    path.dirname(path.dirname(path.dirname(require.resolve('@astrojs/react/package.json')))),
+                  ],
+                },
+              },
+            } : {}),
             // The icon picker imports Font Awesome's set lazily, so Vite's
             // scanner never sees it at startup. Left alone, the first click on
             // "Choose icon" makes Vite optimise the package on the spot — and
