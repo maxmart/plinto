@@ -32,7 +32,7 @@ export interface CollectionConfig {
    * Directory holding this collection's entries, as `{dir}/{lang}/{slug}.mdx`.
    * Site-relative, and may climb out of the site with `../` — that is how a
    * monorepo shares a collection between sites, e.g.
-   * `'../../content-shared/staff'`. Defaults to `{collectionsDir}/{name}`.
+   * `'../../shared/staff'`. Defaults to `{collectionsDir}/{name}`.
    */
   dir?: string;
   /** Editor mode. 'form' renders all fields as form inputs. 'puck' renders fields above a Puck canvas. */

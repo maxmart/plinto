@@ -24,7 +24,6 @@
     "LICENSE"
   ],
   "exports": {
-    ".": "./src/index.ts",
     "./*": "./src/*.ts",
     "./*.tsx": "./src/*.tsx"
   },
@@ -44,7 +43,6 @@
     "clsx": "^2.1.1",
     "estree-util-is-identifier-name": "^3.0.0",
     "gray-matter": "^4.0.3",
-    "mime-types": "^2.1.35",
     "react-markdown": "^10.1.0",
     "remark": "^15.0.1",
     "remark-frontmatter": "^5.0.0",
@@ -66,7 +64,9 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "typescript": "^5.9.2",
+    "@types/turndown": "^5.0.6"
   },
   "publishConfig": {
     "access": "public"

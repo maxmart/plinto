@@ -1,6 +1,6 @@
 # @plinto/astro
 
-**An plinto site is a normal Astro MDX site with a nicer admin.**
+**A Plinto site is a normal Astro MDX site with a nicer admin.**
 
 Everything about the *site* — routing, i18n, sitemap, redirects, styling — is
 ordinary Astro config and ordinary site code. Plinto contributes only the
@@ -155,7 +155,7 @@ leave it as hand-written MDX when you don't.
   ```js
   vite: {
     ssr: {
-      noExternal: ['@plinto/astro', '@plinto/admin', '@plinto/core', '@obelum/core'],
+      noExternal: ['@plinto/astro', '@plinto/admin', '@plinto/core'],
     },
   }
   ```
@@ -197,7 +197,7 @@ person clicks is `@plinto/admin`; the engine under that is `@plinto/core`, and
 under that `@obelum/core`. A site imports none of them directly.
 
 ```
-@plinto/astro          2,277 lines — this package
+@plinto/astro          this package
   integration.ts        validates the site, injects routes, resolves config
                         into virtual:plinto-config
   plinto.ts              the composition root: reads that config once and
@@ -213,16 +213,16 @@ under that `@obelum/core`. A site imports none of them directly.
   lib/ops/index.ts      the published @plinto/astro/lib/ops, for your blocks
   lib/hooks/            what a block may call at build time and in the browser
 
-@plinto/admin          8,970 lines — the editing application, React, no
+@plinto/admin          the editing application, React, no
                       generator: the admin, the Puck editor, MDX ⇄ Puck,
                       the listing walks, the media browser
 
-@plinto/core           4,768 lines — headless: layout (where a document
+@plinto/core           headless: layout (where a document
                       lives), storage (dev-server HTTP or lightning-fs +
                       isomorphic-git), ops, agents, settings, frontmatter,
                       sync-meta, lfs
 
-@obelum/core      407 lines — vector-clock staleness, the anchored
+@obelum/core           vector-clock staleness, the anchored
                       diff, the lazy history cursor. Zero imports.
 ```
 
@@ -251,7 +251,7 @@ npm test          # vitest across every package — the sync engine, the MDX
 npx tsc --noEmit  # clean in each package, tests included
 ```
 
-CI runs both of those plus a build of every site in the repository on each
+CI runs both of those plus a build of the playground on each
 push and pull request. "It builds" is not the bar: the round trip is, and the
 suite's own worst bug was a fixture that made half of it unreachable.
 

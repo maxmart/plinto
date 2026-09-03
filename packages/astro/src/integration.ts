@@ -112,7 +112,7 @@ const VIRTUAL_PREVIEW_ID = 'virtual:plinto-preview';
  * and through Puck's field types, Puck. While the two shared a module, one
  * client script that wanted `content.pagesDir` got all of it: the preview
  * button's script imports the config, and that made a **354 KB** chunk load
- * on 81 of cupmanager's 86 pages, for a button only an editor can use.
+ * on 81 of one site's 86 pages, for a button only an editor can use.
  *
  * Nothing about that was visible in the source. It took building the site and
  * reading what the HTML asks for.

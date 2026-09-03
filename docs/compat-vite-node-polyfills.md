@@ -195,7 +195,7 @@ The diagnosis recipe:
 
 ```bash
 # 1. Find which chunk has the broken call
-find sites/cupmanager/dist/client/_astro -name "*.js" | \
+find examples/playground/dist/_astro -name "*.js" | \
   xargs grep -l "createHash" 2>/dev/null
 
 # 2. Find which npm package it came from

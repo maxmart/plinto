@@ -148,7 +148,7 @@ export function derivePageSummary(mdx: string, options: SummaryOptions = {}): Pa
 
   // Run paragraphs together until there is enough for a standfirst, rather
   // than stopping at the first one. Articles here routinely open with a short
-  // bold line — "Vi har oppdatert Superinvite" — and a card showing only that
+  // bold line — "We have updated the app" — and a card showing only that
   // says nothing; the sentence that follows it is the actual summary.
   const parts: string[] = [];
   for (const paragraph of paragraphs) {

@@ -40,12 +40,12 @@
     "buffer": "^6.0.3",
     "gray-matter": "^4.0.3",
     "isomorphic-git": "^1.36.1",
-    "mime-types": "^2.1.35",
     "@obelum/translator-claude": "^0.1.0"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.2",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.4",
+    "typescript": "^5.9.2"
   },
   "publishConfig": {
     "access": "public"

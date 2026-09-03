@@ -1,16 +1,9 @@
 # dependencies
 /node_modules
 **/node_modules/
-/.pnp
-.pnp.js
 
 # testing
 /coverage
-
-# next.js (legacy)
-/.next/
-/out/
-**/out/
 
 # astro
 dist/
@@ -35,18 +28,8 @@ dev-*.log
 # local env files
 .env*.local
 
-# vercel
-.vercel
-
 # typescript
 *.tsbuildinfo
-next-env.d.ts
-claude_api_key.txt
-
-# Windows reserved names
-nul
-apikey.txt
-apikey.txt
 
 # git worktrees
 .worktrees/

@@ -52,7 +52,7 @@ export function pageSlugOf(contentPath: string): string | null {
  * Where a collection's entries live, as `{dir}/{lang}/{slug}.mdx`.
  *
  * A collection may declare its own `dir`, and that dir may climb out of the
- * site (`'../../content-shared/staff'`) — which is how a monorepo shares one
+ * site (`'../../shared/staff'`) — which is how a monorepo shares one
  * collection between several sites.
  */
 export function collectionDir(c: ResolvedConfig, name: string): string {
@@ -128,7 +128,7 @@ export function toContentPath(c: ResolvedConfig, file: string): { contentPath: s
   }
 
   // Collection with its own dir (shared collections): {dir}/{lang}/{slug}.mdx.
-  // Tried before the generic pattern — a dir like '../../content-shared/staff'
+  // Tried before the generic pattern — a dir like '../../shared/staff'
   // is not under collectionsDir and would never match below.
   for (const { name, dir } of collectionsWithOwnDir(c)) {
     const match = file.match(new RegExp(`^${reEscape(dir)}/([^/]+)/(.+)\\.mdx$`));

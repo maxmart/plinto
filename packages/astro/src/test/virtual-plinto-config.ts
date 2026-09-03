@@ -11,7 +11,7 @@ import type { BlockImportMap } from '@plinto/admin/block-imports';
 
 export const { i18n, content, git, storage, partials } = testConfig;
 
-/** All three sites set this; it is Astro's default that differs. */
+/** What the sites this was built for set; it is Astro's default that differs. */
 export const trailingSlash = 'always' as const;
 
 /**

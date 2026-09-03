@@ -34,7 +34,8 @@ export default defineConfig({
     mdx({ smartypants: false }),
     plinto({
       git: {
-        corsProxy: 'https://atoll-proxy.cupmanager.workers.dev',
+        // A CORS proxy of your own; see proxy/ in the README for a 40-line worker.
+        corsProxy: 'https://your-proxy.example.workers.dev',
       },
       blocksPath: 'src/plinto-blocks.tsx',
       previewPath: 'src/plinto-preview.tsx',
@@ -55,7 +56,7 @@ export default defineConfig({
     ssr: {
       // Every plinto package ships uncompiled source; leaving one out lets the
       // build pass and `astro dev` die on "Cannot find module".
-      noExternal: ['@plinto/astro', '@plinto/admin', '@plinto/core', '@obelum/core'],
+      noExternal: ['@plinto/astro', '@plinto/admin', '@plinto/core'],
     },
   },
   srcDir: './src',
