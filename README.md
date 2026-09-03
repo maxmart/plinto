@@ -25,8 +25,11 @@ what MDX is.
 
 ## Developing
 
-Obelum is not on npm yet. Check out both repos side by side under one npm
-workspace root and install there, never inside one repo:
+Obelum is on npm (`@obelum/core`, `@obelum/translator-claude`), and a plain
+`npm install` in this repo would use the published release. Development
+happens against Obelum's source instead, so a change there shows up here
+without a publish: check out both repos side by side under one npm workspace
+root and install there, never inside one repo.
 
 ```
 workspace/

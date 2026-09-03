@@ -1,8 +1,8 @@
-# Plinto depends on @obelum/core and @obelum/translator-claude, which are not
-# on npm yet. Until they are, CI reproduces the local workspace: both repos
-# checked out side by side under one throwaway npm workspace root, so the
-# sites develop and test against Obelum's source. Once Obelum is published,
-# the obelum checkout and the root package.json go and this becomes `npm ci`.
+# Plinto depends on @obelum/core and @obelum/translator-claude. Both are on
+# npm, but CI tests against Obelum's main rather than its last release, the
+# way the local workspace does: both repos checked out side by side under one
+# throwaway npm workspace root. To test against the release instead, drop the
+# obelum checkout and the root package.json and run `npm ci` here.
 name: CI
 
 on:
