@@ -1,20 +1,22 @@
 /**
  * Translation, bound to Plinto's documents.
  *
- * The translating itself is `@obelum/translator-claude`, which knows nothing
- * about MDX, frontmatter, content paths or git. This module is the adapter
- * between it and the ops layer: it answers the translator's per-document
- * questions (the current version of a language, the version at an older
- * revision, which lines are bookkeeping, how to save) out of content ops and
- * the git store, and tells it the rules that are specific to an MDX site.
+ * The runner and the save rule are `@obelum/core`'s; the translating is
+ * `@obelum/translator-claude`'s. Neither knows about MDX, frontmatter,
+ * content paths or git. This module is the adapter between them and the ops
+ * layer: it answers the runner's per-document questions (the current version
+ * of a language, the version at an older revision, which lines are
+ * bookkeeping, how to save) out of content ops and the git store, and tells
+ * the translator the rules that are specific to an MDX site.
  */
-import { resolveRevToContent, type CommitReader } from '@obelum/core';
 import {
-  runTranslation as translate,
+  resolveRevToContent,
+  runTranslation as run,
+  type CommitReader,
   type TranslationDeps,
   type RunTranslationCallbacks,
-  type DriveFn,
-} from '@obelum/translator-claude';
+} from '@obelum/core';
+import { claude, type DriveFn } from '@obelum/translator-claude';
 import { parseSyncMeta, stripSyncMetadataLines } from '../sync-meta';
 import { FileNotFoundError } from '../storage/file-store/types';
 
@@ -23,7 +25,7 @@ export {
   type LogItem,
   type TranslationStatus,
   type RunTranslationCallbacks,
-} from '@obelum/translator-claude';
+} from '@obelum/core';
 
 /**
  * What a translation needs from the layers below it: the site's languages, the
@@ -74,7 +76,7 @@ async function loadGlossary(getContent: TranslationHost['getContent']): Promise<
   }
 }
 
-/** The translator's view of one document, over this host. */
+/** The runner's view of one document, over this host. */
 export function translationDeps(host: TranslationHost, contentPath: string): TranslationDeps {
   const { locales, getContent, syncContent, resolveFilePath, commits } = host;
   return {
@@ -114,7 +116,7 @@ export function translationDeps(host: TranslationHost, contentPath: string): Tra
 }
 
 /**
- * Run a single translation over this host's documents.
+ * Run a single translation over this host's documents, with Claude.
  * Returns 'done' on success, 'error' on failure, 'cancelled' if cancelled.
  */
 export function runTranslation(
@@ -122,6 +124,6 @@ export function runTranslation(
   opts: RunTranslationOptions,
   callbacks: RunTranslationCallbacks,
 ): Promise<'done' | 'error' | 'cancelled'> {
-  const { contentPath, ...rest } = opts;
-  return translate(translationDeps(host, contentPath), rest, callbacks);
+  const { contentPath, targetLang, apiKey, drive } = opts;
+  return run(translationDeps(host, contentPath), claude({ apiKey, drive }), { targetLang }, callbacks);
 }
