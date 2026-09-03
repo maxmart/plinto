@@ -1,5 +1,7 @@
 # Plinto
 
+Plinto is an admin UI for Astro MDX sites, bundled into the deployed site itself: git-backed content, a visual block editor, and surgical AI translations driven by vector clocks.
+
 **A Plinto site is a normal Astro MDX site with a nicer admin.** Everything
 about the *site* (routing, i18n, sitemap, redirects, styling) is ordinary
 Astro config and ordinary site code. Plinto contributes only the *editing*:

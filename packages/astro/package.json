@@ -2,7 +2,7 @@
   "name": "@plinto/astro",
   "version": "0.1.0",
   "type": "module",
-  "description": "Self-editing Astro CMS library: visual editor, browser git, translation sync",
+  "description": "Plinto is an admin UI for Astro MDX sites, bundled into the deployed site itself: git-backed content, a visual block editor, and surgical AI translations driven by vector clocks.",
   "license": "MIT",
   "repository": {
     "type": "git",

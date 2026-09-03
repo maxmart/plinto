@@ -1,7 +1,7 @@
 {
   "name": "plinto",
   "version": "0.1.0",
-  "description": "A normal Astro MDX site with a nicer admin: visual editor, browser-side git, translation sync. The same package as @plinto/astro.",
+  "description": "Plinto is an admin UI for Astro MDX sites, bundled into the deployed site itself: git-backed content, a visual block editor, and surgical AI translations driven by vector clocks.",
   "license": "MIT",
   "type": "module",
   "repository": {
