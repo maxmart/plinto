@@ -1,0 +1,24 @@
+---
+/**
+ * Root page — redirects to the visitor's preferred language.
+ * JS redirect fires immediately; meta-refresh is the no-JS fallback.
+ * Hand-written on purpose: smarter negotiation needs SSR, which static
+ * hosting doesn't have, and Astro's fixed redirectToDefaultLocale would
+ * ignore the visitor entirely.
+ */
+import { i18n } from 'virtual:plinto-config';
+const fallback = `/${i18n.defaultLocale}/`;
+---
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="refresh" content={`5;url=${fallback}`} />
+  </head>
+  <body>
+    <script is:inline define:vars={{ locales: i18n.locales, fallback }}>
+      var l = (navigator.language || '').slice(0, 2).toLowerCase();
+      location.replace(locales.indexOf(l) !== -1 ? '/' + l + '/' : fallback);
+    </script>
+    <a href={fallback}>Driftwood</a>
+  </body>
+</html>

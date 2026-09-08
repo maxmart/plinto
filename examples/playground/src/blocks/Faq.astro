@@ -1,0 +1,16 @@
+---
+/**
+ * Hydrated wrapper for Faq — the accordion needs client JS, so pages import
+ * this Astro version (see astroBlocks in plinto-blocks.tsx) while the editor
+ * and preview keep using the React component.
+ *
+ * Aliased import: this file is Faq.astro, so the bare name is already taken
+ * by the component it defines.
+ */
+import { Faq as FaqIsland } from './Faq';
+import type { FaqProps } from './Faq';
+
+type Props = FaqProps;
+const { id, heading, items } = Astro.props;
+---
+<FaqIsland id={id} heading={heading} items={items} client:load />

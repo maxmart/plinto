@@ -1,0 +1,20 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "plugins": [{ "name": "@astrojs/ts-plugin" }],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      // The library's exports map points at extensionless source paths, which
+      // Vite resolves by trying extensions and TypeScript does not — so every
+      // @plinto/astro import would read as an unresolved module. Mapping them
+      // straight to source fixes the types; both routes end at the same files.
+      "@plinto/astro/*": ["../../packages/astro/src/*"]
+    },
+    "jsx": "react-jsx",
+    "jsxImportSource": "react",
+    "verbatimModuleSyntax": false
+  },
+  "include": [".astro/types.d.ts", "src/**/*.ts", "src/**/*.tsx", "src/**/*.astro", "src/**/*.mdx"],
+  "exclude": ["node_modules", "dist"]
+}

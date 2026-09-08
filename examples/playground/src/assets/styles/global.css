@@ -1,0 +1,44 @@
+/*
+ * Playground site styles.
+ *
+ * Loaded by src/layouts/Layout.astro after the library's globals.css, so
+ * rules here win on equal specificity. Deliberately tiny: the blocks carry
+ * their own styling and read only the tokens below.
+ */
+
+:root {
+  /* The two typefaces, referenced from the blocks. System stacks on purpose:
+     the playground makes no web-font requests. */
+  --font-body: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-heading: Georgia, 'Times New Roman', serif;
+
+  /* The brand colour and the two text colours the blocks read. */
+  --brand: #0E7490;
+  --ink: #1c2b33;
+  --ink-soft: #51636e;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+}
+
+.pg-footer {
+  margin-top: 48px;
+  padding: 24px 8%;
+  background: #1c2b33;
+  color: #cdd9e0;
+}
+
+.pg-footer a {
+  color: #fff;
+}

@@ -1,0 +1,6 @@
+# The corpus is byte-honest: the playground round-trip test asserts the
+# generator reproduces each document's exact bytes, and the translation evals
+# replay recorded prompts built from them. core.autocrlf=true would hand a
+# Windows checkout CRLF working-tree files and fail both — the files are LF
+# wherever they are checked out.
+*.mdx text eol=lf
