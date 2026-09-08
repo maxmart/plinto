@@ -157,10 +157,9 @@ describe('the repository as a corpus', () => {
 
       // The canonicalizing pass reformats frontmatter — quote style, flow
       // style — so it must be provably about spelling and nothing else. Same
-      // keys, same values, same types as the file on disk. `rev` is why this
-      // matters: it reaches the sync engine through a `typeof === 'number'`
-      // guard, so a re-spelling that turned it into a string would silently
-      // restart every document's vector clock at 0.
+      // keys, same values, same types as the file on disk. A number that came
+      // back as a string, or a date as a Date, would be a change the author
+      // never made, written into every page on its next save.
       expect(second.frontmatter).toEqual(first.frontmatter);
     });
   }

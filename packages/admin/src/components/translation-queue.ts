@@ -34,8 +34,8 @@ export interface QueueItem {
 /**
  * One row of the task list a translation modal shows.
  *
- * Declared here, with the queue that builds it, rather than in lib/translation
- * — a screen's view of a run is not part of a vector clock.
+ * Declared here, with the queue that builds it, rather than in the engine:
+ * a screen's view of a run is not part of the sync.
  */
 export interface TranslationTask {
   targetLang: string;

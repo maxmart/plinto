@@ -1,8 +1,8 @@
 {
   "name": "@plinto/astro",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
-  "description": "Plinto is an admin UI for Astro MDX sites, bundled into the deployed site itself: git-backed content, a visual block editor, and surgical AI translations driven by vector clocks.",
+  "description": "Plinto is an admin UI for Astro MDX sites, bundled into the deployed site itself: git-backed content, a visual block editor, and surgical AI translations that carry what changed in one language into the others.",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -16,7 +16,9 @@
     "mdx",
     "puck",
     "isomorphic-git",
-    "i18n"
+    "i18n",
+    "translation",
+    "obelum"
   ],
   "files": [
     "src",

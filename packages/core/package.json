@@ -1,6 +1,6 @@
 {
   "name": "@plinto/core",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Plinto's engine: the content model, browser-and-dev storage, the operations layer, and the agents — with no opinion about the site generator on top",
   "license": "MIT",
@@ -14,7 +14,9 @@
     "git",
     "mdx",
     "isomorphic-git",
-    "lightning-fs"
+    "lightning-fs",
+    "translation",
+    "obelum"
   ],
   "files": [
     "src",

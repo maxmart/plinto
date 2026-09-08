@@ -1,6 +1,6 @@
 {
   "name": "@plinto/admin",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "type": "module",
   "description": "Plinto's editing application: the admin, the Puck editor over MDX, and everything a person clicks — with no opinion about the site generator underneath",
   "license": "MIT",

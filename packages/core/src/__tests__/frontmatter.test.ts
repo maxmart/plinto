@@ -49,24 +49,22 @@ describe('trap 1: an unquoted date is a YAML timestamp', () => {
   });
 });
 
-describe('trap 2: rev must not become a string', () => {
-  it('keeps rev a number', () => {
-    // `String()` on rev makes it '1'. syncMetaFromData's `typeof === 'number'`
-    // guard then reads that as 0 and restarts the vector clock — every
-    // language silently marked never-synced. Two errors used to cancel here:
+describe('trap 2: a number must not become a string', () => {
+  it('keeps a numeric field a number', () => {
+    // `String()` on a number makes it '1'. Two errors used to cancel here:
     // the old writer spelled every scalar bare, so '1' came back a number by
-    // accident. The writer quotes what it is given now, so the cast would
-    // reach the sync engine intact.
-    const { data, written } = roundTrip(doc('rev: 4\nsynced:\n  en: 2'));
-    expect(data.rev).toBe(4);
-    expect(typeof data.rev).toBe('number');
-    expect(written).toContain('rev: 4');
-    expect(written).not.toContain("rev: '4'");
+    // accident. The writer quotes what it is given now, so a cast would be
+    // written as `'4'` and read back as a string by everything downstream.
+    const { data, written } = roundTrip(doc('order: 4\nlimits:\n  en: 2'));
+    expect(data.order).toBe(4);
+    expect(typeof data.order).toBe('number');
+    expect(written).toContain('order: 4');
+    expect(written).not.toContain("order: '4'");
   });
 
-  it('keeps the vector clock a map of numbers', () => {
-    const { data } = roundTrip(doc('rev: 4\nsynced:\n  en: 2\n  no: 1'));
-    expect(data.synced).toEqual({ en: 2, no: 1 });
+  it('keeps a nested map of numbers as numbers', () => {
+    const { data } = roundTrip(doc('order: 4\nlimits:\n  en: 2\n  no: 1'));
+    expect(data.limits).toEqual({ en: 2, no: 1 });
   });
 
   it('keeps booleans boolean', () => {
