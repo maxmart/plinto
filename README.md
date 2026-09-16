@@ -19,6 +19,7 @@ Plinto and the site still builds.
 | [`@plinto/admin`](packages/admin) | the editing application: admin written in React, uses Puck editor and uses MDX as storage format. No opinion about the site generator |
 | [`@plinto/core`](packages/core) | the engine: content model, browser-and-dev storage, operations, agents. Headless |
 | [`examples/playground`](examples/playground) | a complete site to clone, with tests |
+| [`examples/proxy`](examples/proxy) | the git CORS proxy, a Cloudflare Worker to copy and deploy |
 
 The adopter-facing story is in [`packages/astro/README.md`](packages/astro/README.md).
 
