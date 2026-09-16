@@ -2,12 +2,15 @@ import { useState } from 'react';
 import { usePlinto } from '../../context';
 
 /**
- * Setup screen shown when the user has no stored credentials yet: they enter
- * their name and the base64 setup code an admin generated in SettingsView.
+ * The login. Shown whenever this tab has no credentials: they enter their
+ * name and the base64 setup code an admin generated in SettingsView. The
+ * credentials last for the tab, so this is also what a returning editor sees
+ * in every new tab — hence the name prefilled from the last login, and the
+ * form shaped so a password manager fills the rest.
  */
 export function SetupScreen() {
-  const { settings, config } = usePlinto();
-  const [name, setName] = useState('');
+  const { settings, config, nav } = usePlinto();
+  const [name, setName] = useState(() => settings.adminName());
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [activating, setActivating] = useState(false);
@@ -39,7 +42,11 @@ export function SetupScreen() {
       settings.setRepoUrl(config.git.defaultRepoUrl ?? '');
 
       setActivating(true);
-      setTimeout(() => window.location.reload(), 800);
+      // An editor page sent them here to log in; go back to it. Only an
+      // admin path, so the parameter cannot send a login somewhere else.
+      const next = new URLSearchParams(window.location.search).get('next');
+      const back = next && next.startsWith('/plinto/admin/') ? next : null;
+      setTimeout(() => (back ? nav.go(back) : nav.reload()), 800);
     } catch {
       setError('Invalid setup code');
     }

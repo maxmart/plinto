@@ -66,7 +66,7 @@ export function usePartialLink(opts: {
       // from the pre-Astro layout that no longer exists — the click just
       // navigated into a 404.
       const partialFile = toFilePath(partial.name, lang);
-      window.location.href = `/plinto/admin/edit/?file=${encodeURIComponent(partialFile)}&lang=${lang}`;
+      plinto.nav.go(`/plinto/admin/edit/?file=${encodeURIComponent(partialFile)}&lang=${lang}`);
     };
 
     // The overlay is rendered by the Puck config's root, which lives inside

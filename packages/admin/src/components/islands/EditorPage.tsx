@@ -6,6 +6,7 @@ import type { Frontmatter } from '../../mdx/parser';
 import { usePartialLink } from './use-partial-link';
 import SaveFlow from '../SaveFlow';
 import { usePlinto } from '../../context';
+import { useRequireLogin } from '../admin/use-require-login';
 import type { ResolvedContent } from '@plinto/core';
 
 
@@ -92,6 +93,7 @@ export default function EditorPage() {
     pageFieldsFor, pageRelPath, config, ops,
   } = usePlinto();
   const plinto = usePlinto();
+  useRequireLogin();
   const { parse: parseDocument, generate: generateDocument } = plinto.mdx;
   const { getContent, editContent, fixContent } = ops;
   const searchParams = typeof window !== 'undefined'
@@ -370,6 +372,7 @@ export default function EditorPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 <a
                   href="/plinto/admin/"
+                  onClick={plinto.nav.link}
                   style={{
                     color: '#6b7280',
                     textDecoration: 'none',
@@ -550,7 +553,7 @@ export default function EditorPage() {
           mdxContent={pendingPublishMdx}
           onSaved={() => markSaved(pendingPublishMdx)}
           onDone={() => {
-            if (showQuickPublish) window.location.href = '/plinto/admin/';
+            if (showQuickPublish) plinto.nav.go('/plinto/admin/');
             else setShowSaveSync(false);
           }}
           onCancel={() => { setShowQuickPublish(false); setShowSaveSync(false); }}

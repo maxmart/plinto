@@ -4,6 +4,7 @@ import { CollectionFormEditor } from '../admin/CollectionFormEditor';
 import { CollectionPuckEditor } from '../admin/CollectionPuckEditor';
 import type { CollectionConfig } from '@plinto/core';
 import { usePlinto } from '../../context';
+import { useRequireLogin } from '../admin/use-require-login';
 
 interface ViewState {
   kind: 'loading';
@@ -24,6 +25,7 @@ type State = ViewState | ErrorState | ReadyState;
 
 export default function CollectionEditorPage() {
   const plinto = usePlinto();
+  useRequireLogin();
   const { collectionDir } = usePlinto();
   const { ops } = usePlinto();
   const { getContent } = ops;
@@ -79,7 +81,7 @@ export default function CollectionEditorPage() {
         <div className="max-w-md text-center">
           <h1 className="text-lg font-semibold text-red-600 mb-2">{state.title}</h1>
           <p className="text-sm text-gray-700 mb-4">{state.detail}</p>
-          <a href="/plinto/admin/" className="text-blue-600 underline">Back to admin</a>
+          <a href="/plinto/admin/" onClick={plinto.nav.link} className="text-blue-600 underline">Back to admin</a>
         </div>
       </div>
     );

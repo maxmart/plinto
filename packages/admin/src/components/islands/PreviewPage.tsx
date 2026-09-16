@@ -99,7 +99,7 @@ function PreviewLinkWrapper({ children, lang }: { children: React.ReactNode; lan
 export default function PreviewPage() {
   const {
     toContentPath, toFilePath, pageContentPath, pageSlugOf, config, dev, ops, toPageHref,
-    blockComponents,
+    blockComponents, nav,
   } = usePlinto();
   const { getContent, getRepoInfo, resolveFilePath } = ops;
 
@@ -188,7 +188,7 @@ export default function PreviewPage() {
   };
 
   const handleEdit = () => {
-    window.location.href = `/plinto/admin/edit/?file=${encodeURIComponent(file)}&lang=${lang}`;
+    nav.go(`/plinto/admin/edit/?file=${encodeURIComponent(file)}&lang=${lang}`);
   };
 
   if (loading) {

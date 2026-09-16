@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { usePlinto } from '../../context';
 
 interface EditorHeaderProps {
   title: string;
@@ -36,13 +37,14 @@ export function EditorHeader({
   onSaveAndSync,
   backHref = '/plinto/admin/',
 }: EditorHeaderProps) {
+  const { nav } = usePlinto();
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownBtnRef = useRef<HTMLButtonElement>(null);
 
   return (
     <div className="flex items-center justify-between px-4 h-[52px] border-b bg-white box-border">
       <div className="flex items-center gap-4 min-w-0">
-        <a href={backHref} className="text-sm text-gray-500 hover:text-gray-700 shrink-0">
+        <a href={backHref} onClick={nav.link} className="text-sm text-gray-500 hover:text-gray-700 shrink-0">
           &larr; Back
         </a>
         <span className="font-semibold text-[15px] text-gray-900 truncate">

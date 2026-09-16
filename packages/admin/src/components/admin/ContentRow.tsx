@@ -20,7 +20,7 @@ interface ContentRowProps {
 }
 
 export function ContentRow({ item, activeLang, modifiedPaths, devMode, onSync }: ContentRowProps) {
-  const { toFilePath, pageSlugOf, config, toPageHref } = usePlinto();
+  const { toFilePath, pageSlugOf, config, toPageHref, nav } = usePlinto();
   // Prefer the real path the lister found: toFilePath can't tell whether a
   // nested slug lives at docs/foo.mdx or docs/foo/index.mdx.
   const fullPath = item.filePath ?? toFilePath(item.contentPath, activeLang);
@@ -116,7 +116,7 @@ export function ContentRow({ item, activeLang, modifiedPaths, devMode, onSync }:
           </Button>
         )}
         <Button asChild size="sm">
-          <a href={editHref}>Edit</a>
+          <a href={editHref} onClick={nav.link}>Edit</a>
         </Button>
       </div>
     </div>

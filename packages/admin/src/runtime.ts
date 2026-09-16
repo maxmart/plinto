@@ -15,6 +15,7 @@ import { createStores, type Stores } from '@plinto/core/storage';
 import { createContentOps } from '@plinto/core/ops/content';
 import { createMediaOps } from '@plinto/core/ops/media';
 import { createRepoOps } from '@plinto/core/ops/repo';
+import type { MouseEvent } from 'react';
 import { createSettings, type Settings } from '@plinto/core/settings';
 import * as layout from '@plinto/core/layout';
 import * as fields from '@plinto/core/page-fields';
@@ -38,6 +39,36 @@ export function createAdminRuntime(host: AdminHost) {
 
   // This browser's stored credentials — the port the storage layer takes.
   const settings: Settings = createSettings(config.storage.keyPrefix);
+
+  // Moving between admin pages in this tab. The login lives in memory and is
+  // carried across a navigation only when the departing page says so (see
+  // Settings.carry), so every move to another admin page goes through here,
+  // and a move anywhere else — the site itself, a typed URL — through nothing.
+  const nav = {
+    /** Navigate to another admin page, logged in. */
+    go: (url: string): void => {
+      settings.carry();
+      window.location.assign(url);
+    },
+    /** Reload this admin page, logged in. */
+    reload: (): void => {
+      settings.carry();
+      window.location.reload();
+    },
+    /**
+     * The onClick for an `<a>` to an admin page. A plain click carries the
+     * login; a modified click or middle click opens a new tab, which is left
+     * to the browser and logs in on its own.
+     */
+    link: (e: MouseEvent<HTMLAnchorElement>): void => {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const target = e.currentTarget.getAttribute('target');
+      if (target && target !== '_self') return;
+      e.preventDefault();
+      nav.go(e.currentTarget.href);
+    },
+  };
 
   // One storage for the mode we are in, and one of each store within it:
   // BrowserFileStore caches blob URLs, and two GitStores over one repository
@@ -90,6 +121,7 @@ export function createAdminRuntime(host: AdminHost) {
   return {
     ...host,
     settings,
+    nav,
     ops,
     agents,
     mdx,

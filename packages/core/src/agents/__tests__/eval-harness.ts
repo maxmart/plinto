@@ -114,6 +114,7 @@ function memorySettings(): Settings {
     apiKey: () => get('key'), setApiKey: v => { store.key = v; },
     repoUrl: () => get('repo'), setRepoUrl: v => { store.repo = v; },
     proxyUrl: () => '',
+    carry: () => {},
     clear: () => { for (const k of Object.keys(store)) delete store[k]; },
   };
 }

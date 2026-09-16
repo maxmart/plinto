@@ -49,7 +49,7 @@ function messageOf(err: unknown, fallback: string): string {
 }
 
 export function useRepo() {
-  const { dev, settings, ops, agents } = usePlinto();
+  const { dev, settings, nav, ops, agents } = usePlinto();
   const {
     discard: opsDiscard, initRepo: opsInitRepo,
     pull: opsPull, push: opsPush,
@@ -165,11 +165,12 @@ export function useRepo() {
 
   // Stored credentials and admin name.
   useEffect(() => {
-    setToken(settings.githubToken());
-    const storedName = settings.adminName();
-    setAdminName(storedName);
-    // In browser mode, no stored name means nobody has set this browser up.
-    if (!dev && !storedName) setNeedsAuth(true);
+    const storedToken = settings.githubToken();
+    setToken(storedToken);
+    setAdminName(settings.adminName());
+    // In browser mode the token is the session: it lives in this tab only,
+    // so a new tab logs in again even when the name and clone are here.
+    if (!dev && !storedToken) setNeedsAuth(true);
   }, []);
 
   // Which documents sit in unpushed commits — recomputed whenever that count
@@ -316,7 +317,7 @@ export function useRepo() {
     settings.setRepoUrl(url);
     const pat = window.prompt('Enter GitHub token (PAT):');
     if (pat) settings.setGithubToken(pat);
-    window.location.reload();
+    nav.reload();
   }, []);
 
   return {

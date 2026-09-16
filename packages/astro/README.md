@@ -210,8 +210,10 @@ leave it as hand-written MDX when you don't.
   Vite's bundler resolves it fine — and `astro dev` dies on "Cannot find
   module", because that path goes through Node's own ESM resolution instead.
 - **A git CORS proxy.** Browsers cannot speak the git smart-HTTP protocol
-  cross-origin; a ~30-line Cloudflare Worker forwards it. Any
-  isomorphic-git-compatible proxy works.
+  cross-origin; a small Cloudflare Worker forwards it. One to copy, with
+  its deploy steps, is in
+  [`examples/proxy`](https://github.com/maxmart/plinto/tree/main/examples/proxy).
+  Any isomorphic-git-compatible proxy works in its place.
 - **Tailwind.** The admin UI is styled with Tailwind classes, and — more
   fundamentally — the editor canvas renders *your* blocks, so the editor
   route needs your site's compiled utilities either way. Your Tailwind
@@ -233,6 +235,14 @@ leave it as hand-written MDX when you don't.
   entry with the admin's design tokens) from its layout.
 - **An Anthropic API key** per editor, for the translation sync and merge
   agents. Everything else — editing, saving, publishing — works without one.
+
+  Both keys are held in memory, for the page: the admin passes them along
+  when it moves between its own pages, and nothing else. Leaving for the
+  site itself, a reload, a new tab, or closing the tab is the logout, so a
+  script on one of the site's public pages has nothing to read. The login
+  is a name plus a setup code, shaped so a password manager fills it in.
+  Unpublished work is not lost by logging out — the clone stays in the
+  browser.
 
 ## The pieces
 

@@ -25,7 +25,7 @@ import { usePlinto } from '../../context';
 import type { Section } from '@plinto/core';
 
 export default function AdminPage() {
-  const { sections, toFilePath, config } = usePlinto();
+  const { sections, toFilePath, config, nav } = usePlinto();
   const repo = useRepo();
   const [lang, setLang] = useState(config.i18n.defaultLocale);
   const [activeView, setActiveView] = useState<NavView>({ kind: 'pages' });
@@ -51,8 +51,7 @@ export default function AdminPage() {
     // The file is not written until the editor saves it.
     const filePath = toFilePath(`page/${slug}`, lang);
     const copyParam = copyFrom ? `&copyFrom=${encodeURIComponent(copyFrom)}` : '';
-    window.location.href =
-      `/plinto/admin/edit/?file=${encodeURIComponent(filePath)}&lang=${lang}&new=true&title=${encodeURIComponent(title)}${copyParam}`;
+    nav.go(`/plinto/admin/edit/?file=${encodeURIComponent(filePath)}&lang=${lang}&new=true&title=${encodeURIComponent(title)}${copyParam}`);
   }
 
   /** Sync one document to every language that needs it — all of them if none does. */

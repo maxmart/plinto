@@ -76,7 +76,7 @@ export function CollectionPuckEditor({ config, contentPath, lang, initialMdx, on
       <div className="p-6">
         <p className="text-sm font-medium text-red-700 mb-1">Cannot open this entry</p>
         <p className="text-sm text-gray-600 whitespace-pre-wrap">{entry.error}</p>
-        <a href="/plinto/admin/" className="inline-block mt-4 text-sm text-blue-600 underline">Back to admin</a>
+        <a href="/plinto/admin/" onClick={plinto.nav.link} className="inline-block mt-4 text-sm text-blue-600 underline">Back to admin</a>
       </div>
     );
   }
