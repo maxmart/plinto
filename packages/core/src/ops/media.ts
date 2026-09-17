@@ -43,6 +43,29 @@ export function createMediaOps({ config, stores, settings }: MediaOpsDeps) {
   // Memoize blob URLs for pending LFS blobs to avoid createObjectURL leaks
   const _pendingBlobUrls = new Map<string, string>();
 
+  // Memoize blob URLs for downloaded LFS objects, keyed by oid.
+  const _lfsBlobUrls = new Map<string, string>();
+
+  /**
+   * Turn an LFS download URL into a blob: URL typed by the file's extension.
+   * The LFS CDN serves every object as application/octet-stream; <img> sniffs
+   * PNG and JPEG past that but never SVG, so an untyped URL renders SVG as a
+   * broken image. Falls back to the raw URL if the download fails.
+   */
+  async function lfsBlobUrl(oid: string, url: string, path: string): Promise<string> {
+    if (_lfsBlobUrls.has(oid)) return _lfsBlobUrls.get(oid)!;
+    try {
+      const resp = await fetch(url);
+      if (!resp.ok) return url;
+      const blob = new Blob([await resp.arrayBuffer()], { type: lookupMime(path) });
+      const blobUrl = URL.createObjectURL(blob);
+      _lfsBlobUrls.set(oid, blobUrl);
+      return blobUrl;
+    } catch {
+      return url;
+    }
+  }
+
   const LFS_GITATTRIBUTES_LINE = 'public/media/** filter=lfs diff=lfs merge=lfs -text';
 
   async function ensureLfsGitattributes(): Promise<void> {
@@ -197,7 +220,7 @@ export function createMediaOps({ config, stores, settings }: MediaOpsDeps) {
 
     // 2. Check URL cache
     const cachedUrl = await db.getCachedUrl(oid);
-    if (cachedUrl) return cachedUrl;
+    if (cachedUrl) return lfsBlobUrl(oid, cachedUrl, filePath);
 
     // 3. Fetch from LFS batch API
     const repoUrl = settings.repoUrl();
@@ -210,7 +233,7 @@ export function createMediaOps({ config, stores, settings }: MediaOpsDeps) {
     if (results.length > 0) {
       const { url, expiresAt } = results[0];
       await db.cacheUrl(oid, url, expiresAt);
-      return url;
+      return lfsBlobUrl(oid, url, filePath);
     }
 
     return path; // fallback
