@@ -26,6 +26,9 @@ behaviour for everything below.
 | 8 | No field for `string[]` or tuples | Friction | — |
 | 9 | `@/*` tsconfig alias is required but not listed as required | Friction | Fails at save |
 | 10 | Peer range needs Astro ≥ 6; the README's install line does not say so | Friction | npm says so |
+| 11 | The "build-time ladder" for media is referenced but does not exist | Performance | Yes |
+| 12 | Partials sharing a parent get page-sized overlays; the last one takes every click | Blocker for partials | Yes |
+| 13 | Partials offer every block; no per-partial allow list | Friction | — |
 
 What worked well is at the end.
 
@@ -223,7 +226,69 @@ needs a major upgrade first (here: astro 6.4.8, @astrojs/mdx 5, @astrojs/react 5
 built unchanged). The README's install line (`npm install @plinto/astro @astrojs/react
 react react-dom`) does not mention it.
 
+## 11. The "build-time ladder" does not exist
+
+`downscale.ts` and `MediaBrowser.tsx` both justify bounding uploads at 2560 px with
+"the build-time ladder can shrink what visitors download". No such ladder is in Plinto,
+and none of the existing sites has one: their blocks render `<img src="/media/…">`, the
+stored file as-is. A site moving from hand-built `srcset` images to the media picker
+therefore sends a 1000–2560 px file to a 350 px slot, unless it builds its own.
+
+The site built one (`integrations/media-ladder.mjs`, ~100 lines). At config time it
+reads the size of every raster image in `public/media` and serves that as
+`virtual:media-ladder`; after the build it writes `name-400w.webp`, `-800w`, `-1200w`
+and `-1600w` next to each original in `dist/media/`, only those narrower than the
+original. The site's `<Picture>` then emits a `srcset` of them in production, and
+`width`/`height` whenever the size is known. In dev and in the editor it falls back to
+the plain original, which also covers the editor's `blob:` URLs.
+
+**Suggested fix.** Ship this in `@plinto/astro`, together with a `<MediaImage>` (or a
+`srcset` helper) for blocks. It is what the upload bound already assumes exists.
+
+## 12. Two partials under one parent: every click opens the last one
+
+**Symptom.** With the header and footer as partials, hovering anywhere on the page in
+the editor darkened the whole canvas, and clicking the header opened the **Footer**.
+
+**Cause.** The overlay is positioned against the partial's *parent*
+(`:has(> .plinto-partial-editable) { position: relative }`), because the marker
+itself is `display: contents`. The site's preview shell rendered both partials as
+siblings under the same parent:
+
+```tsx
+<>
+  {topBar}
+  <main>{children}</main>
+  {footer}
+</>
+```
+
+So both overlays were the size of the whole page, and the footer's, drawn last, took
+every click. The playground and cupmanager do not hit this only because their shells
+happen to wrap each partial in its own `<header>` / `<footer>`. Here the partial renders
+its own `<header>`, so the shell had no reason to add one.
+
+**Site workaround.** `<div>{topBar}</div>` and `<div>{footer}</div>`.
+
+**Suggested fix.** Have `usePartial` return the partial inside a wrapper of its own
+(a `display: contents` element cannot be the positioning context, but a
+`position: relative` block element with no layout effect of its own can). Failing that,
+the `usePartial` doc comment should say that each partial needs its own parent.
+
+## 13. Partials inherit the whole block list
+
+A partial's editor offers every registered block, so a page can get a `SiteHeader`
+dropped into its middle and the footer can get a `Hero`. There is no way to say which
+blocks belong to which partial, or that some blocks are partial-only. A per-partial
+`allow` list (Puck slots already have `allow`/`disallow`) would fix it.
+
 ## Smaller things
+
+- **Inline editing changes the prop type.** With `contentEditable: true`, Puck hands the
+  block an `InlineTextField` element instead of the string. Blocks that key lists by
+  text (`key={item.title}`) or process the string (a `*mark*` parser, `.slice()`) break
+  quietly, with duplicate `[object Object]` keys or a thrown TypeError. That is Puck's
+  behaviour, but a note next to the field helpers would save the next site the audit.
 
 - The build prints warnings from Plinto's dependencies: @anthropic-ai/sdk's `node:fs`
   externalised, gray-matter's `eval`, chunk size, an empty `pro-light-svg-icons` chunk.
