@@ -1,4 +1,4 @@
-import { batchDownload, batchUpload, uploadBlob } from '../batch';
+import { batchDownload, batchUpload, uploadBlob, verifyUpload } from '../batch';
 
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
@@ -219,5 +219,105 @@ describe('uploadBlob', () => {
     await expect(
       uploadBlob('https://storage.example.com/upload/abc', PROXY, blob),
     ).rejects.toThrow('LFS blob upload failed: 500 Internal Server Error');
+  });
+});
+
+/**
+ * The shape GitHub actually returns for an upload, as of 2026-09: the S3 href
+ * carries no signature (only actor_id, key_id, repo_id) — it travels in the
+ * action's header — and a verify action points at lfs.github.com. A PUT
+ * without that header is unsigned and S3 answers 403 AccessDenied, which is
+ * what an editor saw when publishing an image.
+ */
+const S3_HREF = `https://github-cloud.s3.amazonaws.com/alambic/media/1/aa/bb/${OID}?actor_id=1&key_id=0&repo_id=2`;
+const GITHUB_UPLOAD = {
+  href: S3_HREF,
+  header: {
+    Authorization:
+      'AWS4-HMAC-SHA256 Credential=AKIA/20260930/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=abc',
+    'x-amz-content-sha256': 'UNSIGNED-PAYLOAD',
+    'x-amz-date': '20260930T120000Z',
+  },
+  expires_at: '2026-09-30T13:00:00Z',
+};
+const GITHUB_VERIFY = {
+  href: 'https://lfs.github.com/owner/repo/objects/verify',
+  header: { Authorization: 'RemoteAuth verifytoken', Accept: 'application/vnd.git-lfs+json' },
+};
+
+describe('the upload action header (GitHub)', () => {
+  it('batchUpload keeps the upload header, the size and the verify action', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        objects: [{ oid: OID, size: 200, actions: { upload: GITHUB_UPLOAD, verify: GITHUB_VERIFY } }],
+      }),
+    });
+
+    const [result] = await batchUpload(PROXY, REPO_URL, [{ oid: OID, size: 200 }], TOKEN);
+
+    expect(result.uploadUrl).toBe(S3_HREF);
+    expect(result.header).toEqual(GITHUB_UPLOAD.header);
+    expect(result.size).toBe(200);
+    expect(result.verify).toEqual(GITHUB_VERIFY);
+  });
+
+  it('an action without a header yields an empty one, and no verify', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        objects: [{ oid: OID, actions: { upload: { href: 'https://storage.example.com/upload/abc' } } }],
+      }),
+    });
+
+    const [result] = await batchUpload(PROXY, REPO_URL, [{ oid: OID, size: 200 }], TOKEN);
+
+    expect(result.header).toEqual({});
+    expect(result.verify).toBeUndefined();
+  });
+
+  it('uploadBlob sends the action header with the PUT', async () => {
+    mockFetch.mockResolvedValue({ ok: true });
+
+    await uploadBlob(S3_HREF, PROXY, new Blob(['x']), GITHUB_UPLOAD.header);
+
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe(
+      `https://cors.example.com/github-cloud.s3.amazonaws.com/alambic/media/1/aa/bb/${OID}?actor_id=1&key_id=0&repo_id=2`,
+    );
+    expect(options.headers).toEqual({
+      'Content-Type': 'application/octet-stream',
+      ...GITHUB_UPLOAD.header,
+    });
+  });
+
+  it('a Content-Type in the action header wins over the default', async () => {
+    mockFetch.mockResolvedValue({ ok: true });
+
+    await uploadBlob('https://storage.example.com/u', PROXY, new Blob(['x']), { 'Content-Type': 'image/webp' });
+
+    expect(mockFetch.mock.calls[0][1].headers['Content-Type']).toBe('image/webp');
+  });
+});
+
+describe('verifyUpload', () => {
+  it('POSTs {oid, size} to the proxied verify href with its header', async () => {
+    mockFetch.mockResolvedValue({ ok: true });
+
+    await verifyUpload(GITHUB_VERIFY, PROXY, { oid: OID, size: 200 });
+
+    const [url, options] = mockFetch.mock.calls[0];
+    expect(url).toBe('https://cors.example.com/lfs.github.com/owner/repo/objects/verify');
+    expect(options.method).toBe('POST');
+    expect(options.headers.Authorization).toBe('RemoteAuth verifytoken');
+    expect(options.headers['Content-Type']).toBe('application/vnd.git-lfs+json');
+    expect(JSON.parse(options.body)).toEqual({ oid: OID, size: 200 });
+  });
+
+  it('throws on non-ok response', async () => {
+    mockFetch.mockResolvedValue({ ok: false, status: 404, statusText: 'Not Found' });
+
+    await expect(verifyUpload(GITHUB_VERIFY, PROXY, { oid: OID, size: 200 }))
+      .rejects.toThrow('LFS verify failed: 404 Not Found');
   });
 });

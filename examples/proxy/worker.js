@@ -41,7 +41,7 @@ export default {
 
     // Validate target
     const allowedTargets = parseList(
-      env.ALLOWED_TARGETS ?? 'github.com,*.githubusercontent.com,*.amazonaws.com'
+      env.ALLOWED_TARGETS ?? 'github.com,lfs.github.com,*.githubusercontent.com,*.amazonaws.com'
     );
     if (!matchesPattern(targetHost, allowedTargets)) {
       return new Response('Target host not allowed', { status: 403 });

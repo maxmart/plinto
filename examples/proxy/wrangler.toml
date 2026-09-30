@@ -7,5 +7,6 @@ compatibility_date = "2026-06-01"
 # request from anywhere else, so list each hostname you actually use — the
 # apex and www are two origins — and keep localhost for `astro dev`.
 ALLOWED_ORIGINS = "https://example.com,https://www.example.com,http://localhost:*"
-# GitHub, plus where GitHub keeps LFS objects.
-ALLOWED_TARGETS = "github.com,*.githubusercontent.com,*.amazonaws.com"
+# GitHub, its LFS server (upload verify goes to lfs.github.com), and where
+# GitHub keeps LFS objects.
+ALLOWED_TARGETS = "github.com,lfs.github.com,*.githubusercontent.com,*.amazonaws.com"

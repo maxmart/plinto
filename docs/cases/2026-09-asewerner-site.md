@@ -29,6 +29,7 @@ behaviour for everything below.
 | 11 | The "build-time ladder" for media is referenced but does not exist | Performance | Yes |
 | 12 | Partials sharing a parent get page-sized overlays; the last one takes every click | Blocker for partials | Yes |
 | 13 | Partials offer every block; no per-partial allow list | Friction | — |
+| 14 | Publishing an uploaded image fails: LFS upload drops the action's signing header | Blocker, **fixed** | No — 403 from S3 |
 
 What worked well is at the end.
 
@@ -281,6 +282,42 @@ A partial's editor offers every registered block, so a page can get a `SiteHeade
 dropped into its middle and the footer can get a `Hero`. There is no way to say which
 blocks belong to which partial, or that some blocks are partial-only. A per-partial
 `allow` list (Puck slots already have `allow`/`disallow`) would fix it.
+
+## 14. Publishing an uploaded image: 403 AccessDenied from S3 (fixed)
+
+**Symptom.** The editor uploaded an image in browser mode and pressed publish. The
+push failed on:
+
+```
+https://<proxy>/github-cloud.s3.amazonaws.com/alambic/media/…?actor_id=…&key_id=0&repo_id=…
+<Error><Code>AccessDenied</Code><Message>Access Denied</Message>…</Error>
+```
+
+It looked like a token problem, but it was not. The token had already passed: the LFS
+batch call to github.com succeeded, which is how the S3 URL was obtained at all.
+
+**Cause.** The git-lfs batch API returns each action as `{ href, header,
+expires_at }`, and the client must send `header` with the request. GitHub signs
+uploads that way: the S3 `href` has no signature in it, and `Authorization`
+(AWS4-HMAC-SHA256), `x-amz-content-sha256` and `x-amz-date` come in `header`.
+`lfs/batch.ts` kept only `href`, and `uploadBlob` sent only `Content-Type`, so S3 got
+an unsigned PUT. Downloads were unaffected because their signature is in the query
+string (`X-Amz-Signature`). The `verify` action GitHub also returns, pointing at
+lfs.github.com, was never called either.
+
+Checked against the live API (a batch `upload` request for a made-up oid, which
+uploads nothing): upload header `[Authorization, x-amz-content-sha256, x-amz-date]`,
+verify header `[Authorization, Accept]`.
+
+**Fix** (in this repo). `batchUpload` returns the action's `header`, the object's
+`size` and the `verify` action. `uploadBlob` takes the header and sends it. The new
+`verifyUpload` POSTs `{oid, size}` with the verify header, and `push` calls it after
+each upload. There are tests with GitHub's real response shape.
+
+The proxy also had to allow `lfs.github.com`: its default `ALLOWED_TARGETS` covered
+`github.com` but not that host, so verify would have been refused by the proxy
+itself. `examples/proxy` is updated. **Every deployed proxy needs the same change**,
+including the shared one in the sites repo.
 
 ## Smaller things
 

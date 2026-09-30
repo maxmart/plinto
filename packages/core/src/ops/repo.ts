@@ -9,7 +9,7 @@ import { isAncestor, countAncestry } from '../storage/git-store/ancestry';
 import type { CommitInfo, ProgressFn, ConflictFile } from '../storage/git-store/types';
 import type { Settings } from '../settings';
 import type { ResolvedConfig } from '../resolved-config';
-import { batchUpload, uploadBlob } from '../lfs/batch';
+import { batchUpload, uploadBlob, verifyUpload } from '../lfs/batch';
 import type { createMediaOps } from './media';
 import { OpsError, translateError } from './errors';
 
@@ -248,9 +248,11 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
         const uploadResults = await batchUpload(
           proxyUrl, repoUrl, pending, token
         );
-        await Promise.all(uploadResults.map(async ({ oid, uploadUrl }) => {
+        await Promise.all(uploadResults.map(async ({ oid, size, uploadUrl, header, verify }) => {
           const blob = await db.getPending(oid);
-          if (blob) await uploadBlob(uploadUrl, proxyUrl, blob);
+          if (!blob) return;
+          await uploadBlob(uploadUrl, proxyUrl, blob, header);
+          if (verify) await verifyUpload(verify, proxyUrl, { oid, size });
         }));
       }
 
