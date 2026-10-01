@@ -78,12 +78,13 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
       // loaded from lightning-fs config (or localStorage backup) at init.
       const repoUrl = (await gitStore.getRemoteUrl()) ?? undefined;
       // Reported rather than waited for. A repository left mid-merge refuses
-      // every save, but nothing in the admin's own start-up fails: the pull
-      // that would surface it short-circuits to up_to_date, because the fetch
-      // it needs already happened. So the admin asked, was told nothing was
-      // wrong, and only found out when a save the user had already typed was
-      // rejected — with the one action that helps sitting on a screen the
-      // error never brought them to.
+      // every save, and nothing in the admin's own start-up used to fail: the
+      // pull that would surface it short-circuited to up_to_date, because the
+      // fetch it needs had already happened. So the admin asked, was told
+      // nothing was wrong, and only found out when a save the user had already
+      // typed was rejected — with the one action that helps sitting on a screen
+      // the error never brought them to. (Pull no longer short-circuits, so it
+      // now refuses too, but the start-up check still should not depend on it.)
       const mergePending = await gitStore.hasPendingMerge();
       return { initialized: true, repoUrl, branch: config.git.defaultBranch, mergePending };
     } catch {
@@ -130,22 +131,29 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
     try {
       const gitStore = await stores.getGitStore();
 
-      // 1. Lightweight check: has remote changed since last fetch?
+      // 1. Lightweight check: has remote changed since last fetch? If not, the
+      //    download can be skipped — but only the download. "Already fetched"
+      //    is not "already merged": a pull whose conflict resolution failed
+      //    rolls the merge back after the fetch moved the tracking ref, and
+      //    returning up_to_date here left that editor with a Pull that did
+      //    nothing and every Publish rejected as non-fast-forward, with no way
+      //    out. Steps 3–5 compare the branch itself and are local and cheap.
       onProgress?.('Checking for remote changes…');
       let knownRemoteOid: string | undefined;
       try { knownRemoteOid = await gitStore.resolveRef(`refs/remotes/origin/${config.git.defaultBranch}`); } catch { /* no remote ref */ }
 
+      let alreadyFetched = false;
       try {
         const remoteInfo = await gitStore.getRemoteInfo(token);
         const remoteHead = remoteInfo.refs?.heads?.[config.git.defaultBranch];
-        if (remoteHead && remoteHead === knownRemoteOid) {
-          return { status: 'up_to_date' };
-        }
+        alreadyFetched = !!remoteHead && remoteHead === knownRemoteOid;
       } catch { /* ls-remote failed, fall through to fetch */ }
 
       // 2. Fetch
-      onProgress?.('Downloading remote changes…');
-      await gitStore.fetch(token);
+      if (!alreadyFetched) {
+        onProgress?.('Downloading remote changes…');
+        await gitStore.fetch(token);
+      }
 
       // 3. Compare local vs remote
       const localOid = await gitStore.getHeadHash();

@@ -1,6 +1,6 @@
 {
   "name": "@plinto/core",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "type": "module",
   "description": "Plinto's engine: the content model, browser-and-dev storage, the operations layer, and the agents — with no opinion about the site generator on top",
   "license": "MIT",

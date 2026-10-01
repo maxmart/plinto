@@ -30,6 +30,7 @@ behaviour for everything below.
 | 12 | Partials sharing a parent get page-sized overlays; the last one takes every click | Blocker for partials | Yes |
 | 13 | Partials offer every block; no per-partial allow list | Friction | — |
 | 14 | Publishing an uploaded image fails: LFS upload drops the action's signing header | Blocker, **fixed** | No — 403 from S3 |
+| 15 | After a failed conflict resolution, Pull reports up to date forever and Publish is rejected | Blocker, **fixed** | Yes |
 
 What worked well is at the end.
 
@@ -318,6 +319,38 @@ The proxy also had to allow `lfs.github.com`: its default `ALLOWED_TARGETS` cove
 `github.com` but not that host, so verify would have been refused by the proxy
 itself. `examples/proxy` is updated. **Every deployed proxy needs the same change**,
 including the shared one in the sites repo.
+
+## 15. After a failed conflict resolution, the editor is stuck for good (fixed)
+
+**Symptom.** The editor had unpublished local changes, and the site repo had moved on
+(our own pushes). On opening the admin, the auto-pull hit MDX conflicts and handed
+them to the Claude merge agent. It sat there, then the console said the conflict
+handling had stopped. After that, Pull did nothing although the button said there
+was something to pull, and Publish failed as non-fast-forward. Nothing in the admin
+could get her out.
+
+**Cause.** `pull()` opened with a shortcut: ask the remote for its head, and if that
+equals the local `refs/remotes/origin/main`, return `up_to_date`. But a pull that
+fetched and then failed in conflict resolution has already moved the tracking ref.
+`abortMerge` correctly put the branch back, and from then on every pull saw "remote
+unchanged since the last fetch" and returned without comparing the branch to the
+remote at all. `push()` pulls first, got the same `up_to_date`, and pushed a branch
+that had not merged the remote. The resolution can fail for many reasons that all
+lead here: no API key, Claude erroring, or (most likely here) the editor leaving the
+page while the agent worked, which rejects with "Closed while a conflict was being
+resolved."
+
+**Fix.** The shortcut now only skips the *download*. The ancestry comparison and the
+merge still run, so the next pull retries the merge. Tests in
+`ops/__tests__/pull.test.ts` script the git store through the rolled-back case, the
+already-fetched fast-forward, plain up-to-date and ahead. Three of them failed before
+the fix.
+
+**Still open.** Resolving a conflict needs the agent and an API key. There is no
+fallback where the editor picks "mine / theirs" per file without Claude, and
+nothing warns that leaving the page will cancel the merge. Pages written as one-line
+JSON props (item 4) also make each conflict a single huge line, which is the
+hardest case for the agent.
 
 ## Smaller things
 
