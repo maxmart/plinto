@@ -1,11 +1,9 @@
 /**
- * Putting a merge conflict to the user, for the two places that can be
- * merging: the admin page (pull, publish) and Quick Publish.
- *
- * Both need the same three things — a promise the agent can await, a dialog
- * to render, and a guarantee that the promise is always settled — and both
- * used to carry their own copy of all of it, forty lines each, differing only
- * in the wording of the errors.
+ * Putting the merge agent's question to the user: a promise the agent can
+ * await, and a guarantee that the promise is always settled. The merge
+ * session (merge-session.tsx) uses it and shows the question inside its own
+ * dialog, for both places that can merge: the admin page (pull, publish) and
+ * Quick Publish.
  */
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { AskConflictQuestion, ConflictChoice } from '@plinto/core/agents/conflict';
@@ -102,44 +100,4 @@ export function useConflictPrompt(): {
   // per render. A dependency array that cannot be relied on is worse than
   // none, because it reads as though it can.
   return useMemo(() => ({ prompt, ask, clear }), [prompt, ask, clear]);
-}
-
-/**
- * The dialog itself. Renders nothing until there is something to ask, so
- * callers can mount it unconditionally.
- */
-export function ConflictDialog({ prompt }: { prompt: ConflictPrompt | null }) {
-  if (!prompt) return null;
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
-        <div className="text-xs text-gray-500 mb-1">{prompt.filePath}</div>
-        <h3 className="text-base font-semibold mb-4">{prompt.question}</h3>
-        <div className="space-y-2">
-          {prompt.options.map((opt, i) => (
-            <button
-              key={i}
-              onClick={() => prompt.resolve(i)}
-              className="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-colors"
-            >
-              <div className="font-medium text-sm">{opt.label}</div>
-              {opt.description && (
-                <div className="text-xs text-gray-500 mt-0.5">{opt.description}</div>
-              )}
-            </button>
-          ))}
-        </div>
-        {/* This dialog sits on top of the progress modal and covers its Cancel
-            button, so without a way out of its own the only escape from a
-            question the user cannot answer was to reload the page — which
-            strands the merge staged and waiting behind it. */}
-        <button
-          onClick={prompt.cancel}
-          className="mt-4 w-full py-2 border rounded text-sm text-gray-600 hover:bg-gray-50"
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
 }

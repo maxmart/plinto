@@ -14,5 +14,5 @@ export { createMediaOps, type MediaOpsDeps, type MediaFile } from './media';
 export {
   createRepoOps, type RepoOpsDeps,
   type RepoInfo, type SyncState, type PullStatus, type OpsPullResult,
-  type OnOpsProgress, type OnConflict, type ProgressFn,
+  type OnOpsProgress, type OpsPhase, type OnConflict, type ProgressFn,
 } from './repo';

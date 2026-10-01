@@ -346,11 +346,27 @@ merge still run, so the next pull retries the merge. Tests in
 already-fetched fast-forward, plain up-to-date and ahead. Three of them failed before
 the fix.
 
-**Still open.** Resolving a conflict needs the agent and an API key. There is no
-fallback where the editor picks "mine / theirs" per file without Claude, and
-nothing warns that leaving the page will cancel the merge. Pages written as one-line
-JSON props (item 4) also make each conflict a single huge line, which is the
-hardest case for the agent.
+**Made visible (same release).** The whole merge used to run behind a spinner. `pull`
+and `push` already reported progress, but the admin passed them no callback, and the
+only dialog was the agent's question, if it asked one. Now `onProgress` also carries
+a phase (`OpsPhase`), and the admin opens a merge dialog the moment the phase reaches
+`merging`. Ordinary checks never open it. The dialog (`merge-session.tsx`, used on
+the admin page and by Quick Publish) does the following:
+
+- shows the steps, the conflicting files and what Claude is writing;
+- warns that leaving the page cancels the merge, and guards `beforeunload` while a
+  merge is under way;
+- asks Claude's questions in place;
+- lets the editor decide each file by hand ("Keep my version" / "Use the published
+  version"), with both versions viewable. This happens straight away without an API
+  key, as the fallback when Claude fails, or on request ("Decide myself instead");
+- on failure, says that nothing was lost and offers **Try again**.
+
+The rules for who resolves are a pure function, `resolveWithFallback`, with tests.
+
+**Still open.** Pages written as one-line JSON props (item 4) make each conflict a
+single huge line, which is the hardest case for the agent and unreadable in the
+"show both versions" view.
 
 ## Smaller things
 

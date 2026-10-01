@@ -11,7 +11,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { usePlinto } from '../../context';
 import { OpsError } from '@plinto/core/ops/errors';
 import { remedyFor, UserFacingError } from '@plinto/core/user-error';
-import { useConflictPrompt } from '../conflict-prompt';
+import { useMergeSession } from '../merge-session';
 import type { AdminGitState } from './GitStatusBar';
 
 export interface CloneProgress {
@@ -49,13 +49,12 @@ function messageOf(err: unknown, fallback: string): string {
 }
 
 export function useRepo() {
-  const { dev, settings, nav, ops, agents } = usePlinto();
+  const { dev, settings, nav, ops } = usePlinto();
   const {
     discard: opsDiscard, initRepo: opsInitRepo,
     pull: opsPull, push: opsPush,
     getCommitLog, getSyncState, getRepoInfo,
   } = ops;
-  const { resolveConflictsWithClaude } = agents;
   const devMode = dev;
 
   const [loading, setLoading] = useState(true);
@@ -81,11 +80,12 @@ export function useRepo() {
    */
   const [mergePending, setMergePending] = useState(false);
 
-  const conflict = useConflictPrompt();
-  // Both are stable for the life of the hook; naming them keeps them out of
-  // the dependency arrays below as the whole `conflict` object, which changes
-  // whenever a question appears or goes away.
-  const { ask: askConflict, clear: clearConflict } = conflict;
+  // Pull and publish can both merge; the session shows that in a dialog and
+  // resolves its conflicts (Claude, or the editor choosing). Its callbacks are
+  // stable, so naming them keeps the whole session object — which changes as
+  // the merge moves along — out of the dependency arrays below.
+  const merge = useMergeSession();
+  const { onConflict, onProgress: onMergeProgress, finish: finishMerge, fail: failMerge } = merge;
 
   /**
    * Whether anything can be pushed at all. Dev mode commits through the local
@@ -211,7 +211,11 @@ export function useRepo() {
     };
   }, [readStatus]);
 
+  /** Which operation the merge dialog's Try again re-runs. */
+  const lastOp = useRef<'pull' | 'publish'>('pull');
+
   const pull = useCallback(async () => {
+    lastOp.current = 'pull';
     if (!canPublish) {
       setError({ message: 'No credentials stored. Please reconnect.' });
       return;
@@ -220,20 +224,22 @@ export function useRepo() {
     setError(null);
     setMergeResult(null);
     try {
-      const result = await opsPull(token ?? '', c =>
-        resolveConflictsWithClaude(c, { onQuestion: askConflict }));
+      const result = await opsPull(token ?? '', onConflict, onMergeProgress);
+      finishMerge(result.mergedFiles);
       if (result.status === 'merged') {
         setMergeResult({ mergedCount: result.mergedFiles?.length ?? 0 });
         setTimeout(() => setMergeResult(null), 4000);
       }
       await reload();
     } catch (err) {
-      report(err, 'Failed to pull. Please try again.');
+      // A failed merge is told in its own dialog, with a Try again; a failure
+      // before any merge started still goes to the banner.
+      if (!failMerge(err)) report(err, 'Failed to pull. Please try again.');
+      await readStatus().catch(() => {});
     } finally {
       setPulling(false);
-      clearConflict();
     }
-  }, [token, canPublish, reload, report, askConflict, clearConflict]);
+  }, [token, canPublish, reload, report, readStatus, onConflict, onMergeProgress, finishMerge, failMerge]);
 
   // Auto-pull once, when the repository first turns out to be there.
   const pulledOnLoad = useRef(false);
@@ -253,23 +259,24 @@ export function useRepo() {
 
   /** Push every local commit. push() pulls first, so this can merge. */
   const publish = useCallback(async () => {
+    lastOp.current = 'publish';
     setPublishing(true);
     setError(null);
     try {
-      const hash = await opsPush(token ?? '', c =>
-        resolveConflictsWithClaude(c, { onQuestion: askConflict }));
+      const hash = await opsPush(token ?? '', onConflict, onMergeProgress);
+      finishMerge();
       setLastPushedSha(hash);
       setPushCount(c => c + 1);
       await reload();
       return true;
     } catch (err) {
-      report(err, 'Failed to commit. Please try again.');
+      if (!failMerge(err)) report(err, 'Failed to commit. Please try again.');
+      await readStatus().catch(() => {});
       return false;
     } finally {
       setPublishing(false);
-      clearConflict();
     }
-  }, [token, reload, report, askConflict, clearConflict]);
+  }, [token, reload, report, readStatus, onConflict, onMergeProgress, finishMerge, failMerge]);
 
   const connect = useCallback(async (url: string, newToken: string) => {
     setLoading(true);
@@ -323,12 +330,16 @@ export function useRepo() {
   return {
     devMode, loading, error, status, needsSetup, needsAuth, token, adminName,
     cloneProgress, modifiedPaths, mergePending, mergeResult, pulling, publishing,
-    lastPushedSha, pushCount, conflict,
+    lastPushedSha, pushCount, merge,
     /** Storage can be read: dev mode always, browser mode once the clone lands. */
     ready: devMode || status.initialized,
     canPublish,
     showError: useCallback((message: string) => setError({ message }), []),
     clearError: useCallback(() => setError(null), []),
     reload, pull, publish, connect, discard, logout, reconnect,
+    /** Re-run the pull or publish whose merge failed. */
+    retryMerge: useCallback(() => {
+      if (lastOp.current === 'publish') publish(); else pull();
+    }, [pull, publish]),
   };
 }

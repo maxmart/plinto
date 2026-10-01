@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import TranslationTaskList from './TranslationTaskList';
-import { useConflictPrompt, ConflictDialog } from './conflict-prompt';
+import { useMergeSession, MergeDialog } from './merge-session';
 import type { TranslationTask } from './translation-queue';
 import { saveAndSync } from './translation-queue';
 import { ProgressModal } from './ui/ProgressModal';
@@ -59,8 +59,6 @@ export default function SaveFlow({
   const { langLabel, settings, config } = plinto;
   const { ops } = usePlinto();
   const { getSyncState, push } = ops;
-  const { agents } = usePlinto();
-  const { resolveConflictsWithClaude } = agents;
   const [step, setStep] = useState<Step>('saving');
   const [error, setError] = useState<string | null>(null);
   const [tasks, setTasks] = useState<TranslationTask[]>([]);
@@ -70,7 +68,8 @@ export default function SaveFlow({
   // merging, resolving conflicts with Claude… Without it the step sits on
   // "Publishing…" for however long all of that takes and looks stuck.
   const [pushDetail, setPushDetail] = useState<string | null>(null);
-  const conflict = useConflictPrompt();
+  // A publish pulls first and can merge; that gets its own dialog on top.
+  const merge = useMergeSession();
   const cancelledRef = useRef(false);
   const bodyRef = useRef<HTMLDivElement>(null);
 
@@ -141,19 +140,18 @@ export default function SaveFlow({
       }
       await push(
         token,
-        c => resolveConflictsWithClaude(c, { onQuestion: conflict.ask, onProgress: setPushDetail }),
-        setPushDetail,
+        merge.onConflict,
+        (message, phase) => { setPushDetail(message); merge.onProgress(message, phase); },
       );
+      merge.finish();
       setPushDetail(null);
       setStep('done');
     } catch (err) {
+      // The merge dialog says what happened to the merge; this modal still
+      // ends on the error so it can be closed.
+      merge.fail(err);
       setError(err instanceof Error ? err.message : String(err));
       setStep('error');
-    } finally {
-      // The push is over however it ended, so nobody is going to answer a
-      // question still on screen. Unmounting is not enough — the error screen
-      // it can end on stays mounted, with the dialog on top of it.
-      conflict.clear();
     }
   }
 
@@ -286,7 +284,7 @@ export default function SaveFlow({
         )}
       </ProgressModal>
 
-      <ConflictDialog prompt={conflict.prompt} />
+      <MergeDialog session={merge} onRetry={doPush} />
     </>
   );
 }

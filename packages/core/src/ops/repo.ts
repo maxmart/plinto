@@ -37,10 +37,20 @@ export interface OpsPullResult {
 }
 
 /**
- * Human-readable progress line for the long-running git orchestrations.
- * Optional everywhere: callers that don't render progress pass nothing.
+ * Where a pull or push is. Lets a caller tell an ordinary check from a merge
+ * without reading the progress text: the admin shows its merge dialog the
+ * moment the phase reaches 'merging', and only then.
  */
-export type OnOpsProgress = (message: string) => void;
+export type OpsPhase =
+  | 'checking' | 'downloading' | 'fast-forward' | 'merging' | 'resolving'
+  | 'uploading-media' | 'retrying' | 'pushing';
+
+/**
+ * Human-readable progress line for the long-running git orchestrations, and
+ * the phase it belongs to. Optional everywhere: callers that don't render
+ * progress pass nothing, and callers that only want the text ignore the phase.
+ */
+export type OnOpsProgress = (message: string, phase?: OpsPhase) => void;
 
 /**
  * How a caller resolves the conflicts a merge could not settle by itself.
@@ -138,7 +148,7 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
       //    returning up_to_date here left that editor with a Pull that did
       //    nothing and every Publish rejected as non-fast-forward, with no way
       //    out. Steps 3–5 compare the branch itself and are local and cheap.
-      onProgress?.('Checking for remote changes…');
+      onProgress?.('Checking for remote changes…', 'checking');
       let knownRemoteOid: string | undefined;
       try { knownRemoteOid = await gitStore.resolveRef(`refs/remotes/origin/${config.git.defaultBranch}`); } catch { /* no remote ref */ }
 
@@ -151,7 +161,7 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
 
       // 2. Fetch
       if (!alreadyFetched) {
-        onProgress?.('Downloading remote changes…');
+        onProgress?.('Downloading remote changes…', 'downloading');
         await gitStore.fetch(token);
       }
 
@@ -172,7 +182,7 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
 
       if (await isAncestor(gitStore, localOid, remoteOid)) {
         // Fast-forward: local is ancestor of remote
-        onProgress?.('Applying remote changes…');
+        onProgress?.('Applying remote changes…', 'fast-forward');
         await gitStore.writeRef(`refs/heads/${config.git.defaultBranch}`, remoteOid);
         await gitStore.checkout(config.git.defaultBranch);
         return { status: 'fast_forward' };
@@ -180,7 +190,7 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
 
       // 5. Diverged — merge. Only MDX documents are worth a Claude-assisted
       // resolution; anything else (media, config) takes the remote's version.
-      onProgress?.('Merging remote changes…');
+      onProgress?.('Merging remote changes…', 'merging');
       const result = await gitStore.merge(remoteOid, path => path.endsWith('.mdx'));
 
       if (result.conflicts.length > 0) {
@@ -212,7 +222,8 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
           const resolved = new Map(copies.map(c => [c.path, c.base ?? '']));
           if (documents.length > 0) {
             onProgress?.(
-              `Resolving ${documents.length} conflicted file${documents.length === 1 ? '' : 's'} with Claude…`
+              `Resolving ${documents.length} conflicted file${documents.length === 1 ? '' : 's'}…`,
+              'resolving',
             );
             for (const r of await onConflict(documents)) resolved.set(r.path, r.content);
           }
@@ -249,7 +260,7 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
       const db = media.getLfsDb();
       const pending = await db.listPending();
       if (pending.length > 0) {
-        onProgress?.(`Uploading ${pending.length} media file${pending.length === 1 ? '' : 's'}…`);
+        onProgress?.(`Uploading ${pending.length} media file${pending.length === 1 ? '' : 's'}…`, 'uploading-media');
         const repoUrl = settings.repoUrl();
         const proxyUrl = settings.proxyUrl() || config.git.corsProxy;
 
@@ -266,11 +277,11 @@ export function createRepoOps({ config, stores, settings, media }: RepoOpsDeps) 
 
       // Push with retry on rejection
       for (let attempt = 0; attempt < 3; attempt++) {
-        if (attempt > 0) onProgress?.('Remote changed while publishing — retrying…');
+        if (attempt > 0) onProgress?.('Remote changed while publishing — retrying…', 'retrying');
         await pull(token, onConflict, onProgress);
 
         try {
-          onProgress?.('Uploading changes…');
+          onProgress?.('Uploading changes…', 'pushing');
           const pushedOid = await gitStore.push(token);
           // Clear pending after successful push
           await db.clearPending();

@@ -19,7 +19,7 @@ import { NewPageModal } from '../admin/NewPageModal';
 import { useRepo } from '../admin/use-repo';
 import { useContentList } from '../admin/use-content-list';
 import SyncAllModal from '../SyncAllModal';
-import { ConflictDialog } from '../conflict-prompt';
+import { MergeDialog } from '../merge-session';
 import DeploymentStatus from '../DeploymentStatus';
 import { usePlinto } from '../../context';
 import type { Section } from '@plinto/core';
@@ -115,7 +115,7 @@ export default function AdminPage() {
           onLogout={!repo.devMode && repo.adminName ? repo.logout : undefined}
           adminName={repo.adminName || undefined}
           pulling={repo.pulling}
-          merging={repo.pulling && repo.conflict.prompt !== null}
+          merging={repo.merge.busy}
           mergeResult={repo.mergeResult}
           onReconnect={repo.reconnect}
         />
@@ -139,7 +139,7 @@ export default function AdminPage() {
         />
       )}
 
-      <ConflictDialog prompt={repo.conflict.prompt} />
+      <MergeDialog session={repo.merge} onRetry={repo.retryMerge} />
 
       {showNewPageModal && (
         <NewPageModal
