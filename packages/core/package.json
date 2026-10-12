@@ -1,6 +1,6 @@
 {
   "name": "@plinto/core",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "type": "module",
   "description": "Plinto's engine: the content model, browser-and-dev storage, the operations layer, and the agents — with no opinion about the site generator on top",
   "license": "MIT",
@@ -37,12 +37,12 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.120.0",
-    "@obelum/core": "^0.2.0",
+    "@obelum/core": "^0.3.0",
     "@isomorphic-git/lightning-fs": "^4.6.2",
     "buffer": "^6.0.3",
     "gray-matter": "^4.0.3",
     "isomorphic-git": "^1.36.1",
-    "@obelum/translator-claude": "^0.2.0"
+    "@obelum/translator-claude": "^0.3.0"
   },
   "devDependencies": {
     "fake-indexeddb": "^6.2.2",
