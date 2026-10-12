@@ -148,6 +148,20 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   try {
+    // A merge left half-done in the working repo (a `git pull` that hit
+    // conflicts) makes git refuse a path-scoped commit with a bare "fatal".
+    // Say what is wrong instead, and before staging, so a save never mixes
+    // itself into the merge's index.
+    const merging = await git(['rev-parse', '-q', '--verify', 'MERGE_HEAD']).then(() => true, () => false);
+    if (merging) {
+      const unmerged = (await git(['diff', '--name-only', '--diff-filter=U'])).trim().split('\n').filter(Boolean);
+      return errorResponse(
+        'The site\'s git repo is in the middle of a merge' +
+        (unmerged.length ? ` with ${unmerged.length} conflicted file${unmerged.length !== 1 ? 's' : ''}` : '') +
+        '. Finish it (resolve and commit) or abort it (git merge --abort) in git, then save again.',
+        409,
+      );
+    }
     await git(['add', '--', ...relFiles]);
     // A byte-identical save is a legitimate no-op, not an error — checked
     // deterministically before committing (`git commit` reports "nothing to

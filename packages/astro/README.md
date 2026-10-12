@@ -109,6 +109,11 @@ as the files stand.
 npm install @plinto/astro @astrojs/react react react-dom
 ```
 
+Plinto needs **Astro 6 or 7**, `@astrojs/react` 5 and React 19 (its peer
+range). A site on Astro 5 upgrades first — `astro`, `@astrojs/mdx` and
+`@astrojs/react` together; npm's peer warning is the only other place this
+is said.
+
 **1. astro.config.mjs** — declare your languages in Astro's own i18n config
 (plinto reads it there; `routing: 'manual'` is required because the injected
 admin routes live outside the locale tree), and register the integration:
@@ -169,11 +174,21 @@ Hero.config = {
 export const blocks: BlockRegistry = { Hero };
 ```
 
-Field sentinels — `richtext()`, `mediaPicker()`, `pageLink()` — declare the
+Field sentinels — `richtext()`, `mediaPicker()`, `pageLink()`, `iconPicker()`,
+`stringList()` (a `string[]` as one item per line) — declare the
 plinto-aware field types; everything else is Puck's own field vocabulary.
 Never declare an `id` field: Puck owns `props.id`.
 
-**4. Run it.** `astro dev` and open `/plinto/admin`. In dev mode the admin
+**4. tsconfig.json** — the `@/*` alias. The editor writes each page's
+imports as `@/…` (whatever relative path the registry used), so a page
+resolves from any depth; without the alias the first saved page does not
+build:
+
+```json
+{ "compilerOptions": { "baseUrl": ".", "paths": { "@/*": ["./src/*"] } } }
+```
+
+**5. Run it.** `astro dev` and open `/plinto/admin`. In dev mode the admin
 reads and writes your real working tree through the dev server and commits
 with your own git. The deployed static site serves the same admin in browser
 mode: it clones the repository into the browser (via the CORS proxy, with a
@@ -186,6 +201,19 @@ loose prose is refused loudly rather than silently rewritten (the editor's
 data model is blocks, and it never destroys what it cannot represent). Adopt
 page by page: convert a page to blocks when you want it visually editable,
 leave it as hand-written MDX when you don't.
+
+A save keeps your formatting. Every part of the page the edit left alone —
+frontmatter, imports, each block and each child block — is written back as
+the text it was. Only what changed is written in the editor's own form
+(sorted imports, `@/` paths, object and array props as one-line JSON). So an
+untouched page saves byte-identical, and a one-word edit is a diff of that one
+block.
+
+**Block ids.** Puck tells blocks apart by `props.id`. A block without one gets
+a `Type-uuid` each time the page opens. The id is written to the file only once
+that block is edited. A block that already uses `id` as an HTML anchor keeps its
+value, since Puck only needs ids to be unique. But `id` belongs to Puck: a new
+block's anchor will be a `Type-uuid`.
 
 ### What you also need, honestly
 
@@ -231,8 +259,15 @@ leave it as hand-written MDX when you don't.
   Missing it does not break loudly: the classes your own site happens to
   share are still generated, so the admin comes out *almost* right.
 
-  and your site imports `@plinto/astro/styles/globals.css` (the Tailwind
-  entry with the admin's design tokens) from its layout.
+  The admin's own routes import `@plinto/astro/styles/globals.css` (the
+  Tailwind entry with the admin's design tokens) themselves. Import it from
+  your layout only if public pages use `PreviewButton` or `.plinto-header`.
+
+  **A site without Tailwind** still needs it configured for the admin —
+  `tailwindcss@3`, `postcss`, `autoprefixer`, a `postcss.config.mjs`, and a
+  `tailwind.config.mjs` whose `content` lists the plinto packages above. Not
+  importing `globals.css` from the layout keeps Tailwind's reset off the
+  public pages.
 - **An Anthropic API key** per editor, for the translation sync and merge
   agents. Everything else — editing, saving, publishing — works without one.
 

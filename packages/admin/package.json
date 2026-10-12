@@ -1,6 +1,6 @@
 {
   "name": "@plinto/admin",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "type": "module",
   "description": "Plinto's editing application: the admin, the Puck editor over MDX, and everything a person clicks — with no opinion about the site generator underneath",
   "license": "MIT",
@@ -32,8 +32,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@plinto/core": "^0.2.0",
     "@mdx-js/mdx": "^3.1.1",
+    "@plinto/core": "^0.3.0",
     "@puckeditor/core": "^0.21.1",
     "@radix-ui/react-slot": "^1.2.4",
     "@tiptap/extension-image": "^3.22.4",
@@ -41,6 +41,7 @@
     "@tiptap/starter-kit": "^3.22.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "diff": "^8.0.4",
     "estree-util-is-identifier-name": "^3.0.0",
     "gray-matter": "^4.0.3",
     "react-markdown": "^10.1.0",
@@ -64,9 +65,9 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
-    "vitest": "^3.2.4",
+    "@types/turndown": "^5.0.6",
     "typescript": "^5.9.2",
-    "@types/turndown": "^5.0.6"
+    "vitest": "^3.2.4"
   },
   "publishConfig": {
     "access": "public"

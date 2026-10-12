@@ -74,6 +74,9 @@ export interface RunTranslationCallbacks {
   onStatusChange: (status: TranslationStatus) => void;
   /** Polled between steps and stream events; a true return aborts the run. */
   isCancelled: () => boolean;
+  /** The target as it was and what was saved over it, once saved — so a
+   *  screen can show what a sync did after the run is over. */
+  onResult?: (result: { before: string; after: string }) => void;
 }
 
 function logItemOf(event: TranslationEvent): LogItem | null {
@@ -140,7 +143,7 @@ export async function runTranslation(
   callbacks: RunTranslationCallbacks,
 ): Promise<'done' | 'error' | 'cancelled'> {
   const { contentPath, targetLang, apiKey, drive } = opts;
-  const { onLogItem, onStatusChange, isCancelled } = callbacks;
+  const { onLogItem, onStatusChange, isCancelled, onResult } = callbacks;
 
   try {
     if (isCancelled()) return 'cancelled';
@@ -168,6 +171,7 @@ export async function runTranslation(
 
     onStatusChange('saving');
     await sync(targetLang, content);
+    onResult?.({ before: brief.targetContent, after: content });
     onStatusChange('done');
     return 'done';
   } catch (err) {

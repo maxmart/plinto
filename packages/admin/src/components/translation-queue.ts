@@ -45,6 +45,9 @@ export interface TranslationTask {
   error?: string;
   log: LogItem[];
   editCount: number;
+  /** The target before and after, once saved: what the sync did. */
+  before?: string;
+  after?: string;
 }
 
 /** Where a save-and-sync run has got to. */
@@ -159,6 +162,7 @@ export async function runTranslationQueue(
       {
         isCancelled: opts.isCancelled,
         onStatusChange: status => update(i, { status }),
+        onResult: ({ before, after }) => update(i, { before, after }),
         onLogItem: item => {
           const log = mergeLogItem(tasks[i].log, item);
           update(i, {

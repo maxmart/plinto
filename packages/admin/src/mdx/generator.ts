@@ -4,6 +4,7 @@ import { htmlToMarkdown } from './markdown-html';
 import type { RichtextFields } from './richtext-fields';
 import { renderImportBlock } from '../block-imports';
 import type { BlockImportMap } from '../block-imports';
+import type { BlockSpan, ParsedMdx, SourceSpan } from './parser';
 
 /**
  * Every block type the document uses, including nested ones, in the order
@@ -40,41 +41,168 @@ export interface GenerateOptions {
   richtext: RichtextFields | false;
   /** Where a generated document imports each block's component from. */
   blockImports: BlockImportMap;
+  /**
+   * The document as it stands on disk, parsed with the same richtext rule.
+   * Any part of it the edit left alone — the frontmatter, the imports, a
+   * block, a block's child — is written back as its original text, and only
+   * what changed is written in this generator's own form.
+   *
+   * Without it every save rewrote the whole file: a hand-written page opened
+   * and saved untouched came back as a 33-line diff of nothing but
+   * formatting (asewerner-site, #4), and a one-word edit carried that diff
+   * with it — a merge conflict waiting for anyone else editing the file.
+   */
+  original?: ParsedMdx;
+}
+
+/** A stretch of output, and where it came from when it was kept verbatim. */
+interface Piece {
+  text: string;
+  span?: SourceSpan;
+}
+
+/**
+ * Pieces in order, `separator` between them — except between two kept pieces
+ * that were neighbours in the source, which keep whatever whitespace stood
+ * between them there. Neighbours means only whitespace lay between: a block
+ * deleted from between them is text, and the gap then gets the separator.
+ */
+function joinPieces(pieces: Piece[], separator: string, source: string | undefined): string {
+  let out = '';
+  pieces.forEach((piece, i) => {
+    const prev = pieces[i - 1];
+    if (prev) {
+      const gap = source !== undefined && prev.span && piece.span && prev.span.end <= piece.span.start
+        ? source.slice(prev.span.end, piece.span.start)
+        : undefined;
+      out += gap !== undefined && /^\s*$/.test(gap) ? gap : separator;
+    }
+    out += piece.text;
+  });
+  return out;
+}
+
+/**
+ * The original document's blocks, each with the text this generator would
+ * write for it, so a block in the document being saved can be recognised as
+ * one of them, unchanged.
+ *
+ * Matched on that text with the id left out, and on depth, first unused match
+ * in document order. The id is left out because a hand-written block has
+ * none in the file: the editor mints one each time it opens the page (see
+ * ParseOptions.ensureIds), so a minted id says nothing about change. Where
+ * the file does carry an id, it must still be the same one.
+ */
+class Keeper {
+  private readonly candidates: Array<{ span: BlockSpan; depth: number; key: string; ids: unknown[]; used: boolean }> = [];
+
+  constructor(readonly source: string, original: ParsedMdx, private readonly isRichtextField: RichtextFields) {
+    const walk = (blocks: any[], spans: BlockSpan[], depth: number) => {
+      if (blocks.length !== spans.length) return;
+      blocks.forEach((block, i) => {
+        if (!block?.type || !block.props) return;
+        this.candidates.push({ span: spans[i], depth, key: this.key(block, depth), ids: idsOf(block), used: false });
+        if (Array.isArray(block.props.children)) walk(block.props.children, spans[i].children, depth + 1);
+      });
+    };
+    walk(original.data.content ?? [], original.layout.blocks, 0);
+  }
+
+  private key(block: any, depth: number): string {
+    return componentToMdx(withoutIds(block), depth, this.isRichtextField);
+  }
+
+  /** The source span of an unchanged original of `block`, claimed, if there is one. */
+  take(block: any, depth: number): BlockSpan | undefined {
+    if (!block?.type || !block.props) return undefined;
+    const key = this.key(block, depth);
+    const ids = idsOf(block);
+    const match = this.candidates.find(c =>
+      !c.used && c.depth === depth && c.key === key
+      && c.ids.every((id, i) => id === undefined || id === ids[i]));
+    if (!match) return undefined;
+    match.used = true;
+    return match.span;
+  }
+}
+
+/** A block and its descendants with no ids — what is compared. */
+function withoutIds(block: any): any {
+  if (!block?.props) return block;
+  const { id: _id, children, ...props } = block.props;
+  return {
+    ...block,
+    props: { ...props, ...(children !== undefined && { children: Array.isArray(children) ? children.map(withoutIds) : children }) },
+  };
+}
+
+/** The ids of a block and its descendants, in document order. */
+function idsOf(block: any, into: unknown[] = []): unknown[] {
+  into.push(block?.props?.id);
+  if (Array.isArray(block?.props?.children)) block.props.children.forEach((c: any) => idsOf(c, into));
+  return into;
+}
+
+/** Equal as data, whatever order the keys are in. */
+function sameData(a: unknown, b: unknown): boolean {
+  const canonical = (v: unknown): unknown =>
+    Array.isArray(v) ? v.map(canonical)
+      : v && typeof v === 'object'
+        ? Object.fromEntries(Object.keys(v).sort().map(k => [k, canonical((v as Record<string, unknown>)[k])]))
+        : v;
+  return JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 }
 
 export function puckToMdx(data: Data, frontmatter: Frontmatter | undefined, options: GenerateOptions): string {
   const isRichtextField: RichtextFields = options.richtext === false ? () => false : options.richtext;
-  const parts: string[] = [];
+  const original = options.original;
+  const layout = original?.layout;
+  const keeper = original ? new Keeper(original.layout.source, original, isRichtextField) : undefined;
+  const parts: Piece[] = [];
 
   // The frontmatter block, without the newline that terminates it — the join
   // below supplies every separator, so that one would make a second blank
   // line under the closing `---` on every page in the repository.
   if (frontmatter && Object.keys(frontmatter).length > 0) {
-    parts.push(writeFrontmatter(frontmatter, '').trimEnd());
+    parts.push(layout?.frontmatter && sameData(frontmatter, original!.frontmatter)
+      ? { text: layout.source.slice(layout.frontmatter.start, layout.frontmatter.end), span: layout.frontmatter }
+      : { text: writeFrontmatter(frontmatter, '').trimEnd() });
   }
 
   if (data.content?.length) {
-    const body: string[] = [];
-    const importBlock = renderImportBlock(collectTypes(data.content), options.blockImports);
-    if (importBlock) body.push(importBlock);
-    for (const component of data.content) {
-      const mdx = componentToMdx(component, 0, isRichtextField);
-      if (mdx) body.push(mdx);
+    // The original's imports still serve a document using exactly the blocks
+    // it used, whatever path they spell; any other set gets its own.
+    const types = collectTypes(data.content);
+    if (layout?.imports && sameData([...types].sort(), [...collectTypes(original!.data.content ?? [])].sort())) {
+      parts.push({ text: layout.source.slice(layout.imports.start, layout.imports.end), span: layout.imports });
+    } else {
+      const importBlock = renderImportBlock(types, options.blockImports);
+      if (importBlock) parts.push({ text: importBlock });
     }
-    if (body.length) parts.push(body.join('\n\n'));
+    for (const component of data.content) {
+      const piece = blockPiece(component, 0, isRichtextField, keeper);
+      if (piece.text) parts.push(piece);
+    }
   }
 
   if (parts.length === 0) return '';
   // Exactly one closing newline. A text file ends with one — 440 of the 448
   // documents here do — and it is what the copies under .obelum/ hold, so the last
   // byte stops flipping back and forth as a page is edited and then synced.
-  return parts.join('\n\n') + '\n';
+  return joinPieces(parts, '\n\n', layout?.source) + '\n';
+}
+
+/** One block: its original text when the save left it alone, otherwise written fresh. */
+function blockPiece(component: any, depth: number, isRichtextField: RichtextFields, keeper?: Keeper): Piece {
+  const span = keeper?.take(component, depth);
+  if (span) return { text: keeper!.source.slice(span.start, span.end), span };
+  return { text: componentToMdx(component, depth, isRichtextField, keeper) };
 }
 
 /**
  * Converts a single component to MDX
  */
-function componentToMdx(component: any, depth: number, isRichtextField: RichtextFields): string {
+function componentToMdx(component: any, depth: number, isRichtextField: RichtextFields, keeper?: Keeper): string {
   const indent = '  '.repeat(depth);
   const { type, props } = component;
 
@@ -216,10 +344,15 @@ function componentToMdx(component: any, depth: number, isRichtextField: Richtext
     return `${openingTag}\n${closingTag}`;
   }
 
-  const childrenMdx = childComponents
-    .map((child: any) => componentToMdx(child, depth + 1, isRichtextField))
-    .filter((mdx: string) => mdx.length > 0)
-    .join('\n');
+  // A changed block's unchanged children are still kept, so adding one item
+  // to a menu does not reformat the others.
+  const childrenMdx = joinPieces(
+    childComponents
+      .map((child: any) => blockPiece(child, depth + 1, isRichtextField, keeper))
+      .filter((piece: Piece) => piece.text.length > 0),
+    '\n',
+    keeper?.source,
+  );
 
   return `${openingTag}\n${childrenMdx}\n${closingTag}`;
 }

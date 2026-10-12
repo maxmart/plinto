@@ -9,6 +9,18 @@ import { usePlinto } from '../../context';
 import { useRequireLogin } from '../admin/use-require-login';
 import type { ResolvedContent } from '@plinto/core';
 
+/**
+ * Module constants, not inline props: Puck re-picks the viewport closest to
+ * the window width whenever `viewports` or `iframe` change identity, and every
+ * edit re-renders this page — so inline literals snapped the canvas back to
+ * Desktop after each keystroke, whatever the editor had switched to.
+ */
+const IFRAME = { enabled: true };
+const VIEWPORTS = [
+  { width: 375, height: 'auto' as const, label: 'Mobile', icon: 'Smartphone' as const },
+  { width: 768, height: 'auto' as const, label: 'Tablet', icon: 'Tablet' as const },
+  { width: 1280, height: 'auto' as const, label: 'Desktop', icon: 'Monitor' as const },
+];
 
 /**
  * Give a page the layout that wraps it in the site's shell.
@@ -196,6 +208,7 @@ export default function EditorPage() {
     hasChanges,
     latestData,
     frontmatter: frontmatterRef,
+    original: originalMdx,
     onSaved: mdx => { originalMdx.current = mdx; },
   });
 
@@ -238,7 +251,7 @@ export default function EditorPage() {
     // it is asked for, not in a dialog on every keystroke.
     let newMdx: string | null = null;
     try {
-      newMdx = generateDocument(newData, next);
+      newMdx = generateDocument(newData, next, originalMdx.current);
     } catch { /* reported by currentMdx() when the user saves */ }
     setHasChanges(newMdx === null || newMdx !== originalMdx.current);
   }, []);
@@ -254,7 +267,7 @@ export default function EditorPage() {
    */
   const currentMdx = (): string | null => {
     try {
-      return generateDocument(latestData.current, frontmatterRef.current);
+      return generateDocument(latestData.current, frontmatterRef.current, originalMdx.current);
     } catch (err) {
       alert('This page cannot be saved as it stands: ' + (err instanceof Error ? err.message : String(err)));
       return null;
@@ -349,14 +362,8 @@ export default function EditorPage() {
         data={data}
         onChange={handleDataChange}
         onPublish={handleQuickPublish}
-        iframe={{
-          enabled: true,
-        }}
-        viewports={[
-          { width: 375, height: 'auto', label: 'Mobile', icon: 'Smartphone' },
-          { width: 768, height: 'auto', label: 'Tablet', icon: 'Tablet' },
-          { width: 1280, height: 'auto', label: 'Desktop', icon: 'Monitor' },
-        ]}
+        iframe={IFRAME}
+        viewports={VIEWPORTS}
         overrides={{
           header: ({ children }) => (
             <div style={{

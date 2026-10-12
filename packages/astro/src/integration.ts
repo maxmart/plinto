@@ -89,6 +89,60 @@ const FONTAWESOME_AVAILABLE = (() => {
   }
 })();
 
+/**
+ * Every third-party package plinto's browser code imports, as Vite's
+ * `optimizeDeps.include` names it.
+ *
+ * Installed from npm, plinto's packages sit in node_modules as `.ts`/`.tsx`
+ * source. Vite serves such files as they are and does not queue the bare
+ * imports *inside* them for pre-bundling, so every CommonJS package they reach
+ * — gray-matter, then style-to-js under react-markdown, and on down the chain —
+ * arrives in the browser raw and the admin dies on "does not provide an export
+ * named 'default'" (asewerner-site, #1). Through a workspace link the packages
+ * count as the site's own source, Vite crawls them, and nothing goes wrong,
+ * which is why only a site installing from npm ever saw it.
+ *
+ * Pre-bundling plinto's direct dependencies takes everything beneath them
+ * along. Each is named through the package that declares it (`@plinto/astro >
+ * @plinto/admin > remark`) so Vite finds it wherever npm put it, hoisted or
+ * nested. Left out: plinto's own packages (source, served as such), the
+ * server-only and specially handled ones below, and anything not installed.
+ */
+const NOT_PREBUNDLED = new Set([
+  'isomorphic-git',     // aliased to its ESM build — see ISOMORPHIC_GIT_ESM
+  'mime-types',         // the dev API's, on the server only
+  '@anthropic-ai/sdk',  // imported lazily, ESM, and see the esbuild hook below
+]);
+const PLINTO_DEPS = (() => {
+  const astroDir = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+  const found = new Map<string, string>();
+  const dirOf = (name: string, from: string): string | null => {
+    for (let dir = from; ; dir = path.dirname(dir)) {
+      const candidate = path.join(dir, 'node_modules', name);
+      if (fs.existsSync(path.join(candidate, 'package.json'))) return fs.realpathSync(candidate);
+      if (path.dirname(dir) === dir) return null;
+    }
+  };
+  const walk = (dir: string, chain: string) => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(dir, 'package.json'), 'utf8'));
+    const nested: Array<[string, string]> = [];
+    for (const name of Object.keys(pkg.dependencies ?? {})) {
+      if (found.has(name) || NOT_PREBUNDLED.has(name)) continue;
+      const depDir = dirOf(name, dir);
+      if (!depDir) continue;
+      if (name.startsWith('@plinto/')) nested.push([depDir, `${chain} > ${name}`]);
+      else found.set(name, `${chain} > ${name}`);
+    }
+    for (const [depDir, depChain] of nested) walk(depDir, depChain);
+  };
+  try {
+    walk(astroDir, '@plinto/astro');
+  } catch {
+    return [];
+  }
+  return [...found.values()];
+})();
+
 const VIRTUAL_MODULE_ID = 'virtual:plinto-config';
 /**
  * The site's preview shell gets a module of its own rather than riding along
@@ -313,7 +367,17 @@ export default function plinto(config: PlintoConfig): AstroIntegration {
         const partials = derivePartials(
           path.resolve(projectRoot, content.partialsDir),
           locales,
-        );
+        ).map(p => (content.partialBlocks?.[p.file] ? { ...p, blocks: content.partialBlocks[p.file] } : p));
+        // A key naming no partial is a typo that would otherwise just not
+        // apply, leaving the partial open to every block with no sign why.
+        for (const file of Object.keys(content.partialBlocks ?? {})) {
+          if (!partials.some(p => p.file === file)) {
+            throw new Error(
+              `[@plinto/astro] content.partialBlocks names "${file}", which is not a partial ` +
+              `(found: ${partials.map(p => p.file).join(', ') || 'none'}).`,
+            );
+          }
+        }
 
         // Nothing may claim two addresses. A document's contentPath is either
         // `page/{slug}`, `{collection}/{slug}` or a bare partial name, so a
@@ -377,13 +441,18 @@ export default function plinto(config: PlintoConfig): AstroIntegration {
             // directory that actually holds the dependencies is a no-op for
             // a normal install (it is the site root) and the fix for the
             // shell. The site root is repeated because setting `allow`
-            // replaces Vite's default rather than extending it.
+            // replaces Vite's default rather than extending it. Resolved from
+            // the site, not from here: the browser loads the site's copy, and
+            // a stray node_modules beside this package would otherwise allow
+            // the wrong directory.
             ...(command === 'dev' ? {
               server: {
                 fs: {
                   allow: [
                     projectRoot,
-                    path.dirname(path.dirname(path.dirname(require.resolve('@astrojs/react/package.json')))),
+                    path.dirname(path.dirname(path.dirname(
+                      createRequire(path.join(projectRoot, 'package.json')).resolve('@astrojs/react/package.json'),
+                    ))),
                   ],
                 },
               },
@@ -394,9 +463,10 @@ export default function plinto(config: PlintoConfig): AstroIntegration {
             // that forces a full page reload, so the modal never opens and the
             // editor resets instead. Pre-bundling it means the import resolves
             // from the cache and the picker just opens. Only when it is
-            // actually installed — see FONTAWESOME_AVAILABLE.
+            // actually installed — see FONTAWESOME_AVAILABLE. Plinto's own
+            // dependencies are named for a different reason: see PLINTO_DEPS.
             optimizeDeps: {
-              include: FONTAWESOME_AVAILABLE ? [FONTAWESOME_PKG] : [],
+              include: [...PLINTO_DEPS, ...(FONTAWESOME_AVAILABLE ? [FONTAWESOME_PKG] : [])],
               // @anthropic-ai/sdk reaches for node builtins behind guarded
               // dynamic imports — its credential chain reads `node:fs` when no
               // key was passed. Pre-bundling it for the browser makes esbuild

@@ -9,6 +9,10 @@ import { FieldInput } from './FieldInput';
 import { useCollectionEntry } from './useCollectionEntry';
 import type { CollectionConfig } from '@plinto/core';
 
+/** Stable identity: a fresh object resets Puck's viewport on every render
+ *  (see EditorPage's VIEWPORTS). */
+const IFRAME = { enabled: true };
+
 /**
  * puckToMdx always emits a YAML frontmatter block, even when the frontmatter
  * map is empty (output: "---\n---\n\nbody…"). This strips that leading empty
@@ -39,7 +43,7 @@ export function CollectionPuckEditor({ config, contentPath, lang, initialMdx, on
     lang,
     initialMdx,
     onSaved,
-    buildBody: () => stripEmptyFrontmatter(generateDocument(latestData.current, {})),
+    buildBody: () => stripEmptyFrontmatter(generateDocument(latestData.current, {}, entry.parsedBody)),
   });
   const { setError } = entry;
 
@@ -105,7 +109,7 @@ export function CollectionPuckEditor({ config, contentPath, lang, initialMdx, on
           config={puckConfig}
           data={puckData}
           onChange={handleDataChange}
-          iframe={{ enabled: true }}
+          iframe={IFRAME}
         />
       </div>
 

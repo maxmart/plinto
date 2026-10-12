@@ -20,6 +20,8 @@ export function usePartialLink(opts: {
   hasChanges: boolean;
   latestData: React.RefObject<Data>;
   frontmatter: React.RefObject<Frontmatter>;
+  /** The file as it stands, so a save keeps what this edit left alone. */
+  original: React.RefObject<string>;
   /** This content is now what the file holds. */
   onSaved: (mdx: string) => void;
 }) {
@@ -50,7 +52,7 @@ export function usePartialLink(opts: {
 
       if (hasChanges && window.confirm(`You have unsaved changes. Save before editing ${partial.label}?`)) {
         try {
-          const mdx = generateDocument(live.current.latestData.current!, live.current.frontmatter.current!);
+          const mdx = generateDocument(live.current.latestData.current!, live.current.frontmatter.current!, live.current.original.current);
           // A minor fix: leaving this page to edit its top bar is not a
           // revision of this page, and must not mark every other language
           // stale.

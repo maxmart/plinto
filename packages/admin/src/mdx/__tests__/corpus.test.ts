@@ -112,6 +112,17 @@ describe('the repository as a corpus', () => {
   for (const file of corpus) {
     const label = path.relative(repoRoot, file).replace(/\\/g, '/');
 
+    // Opened the way the editor opens it, ids minted, and saved with nothing
+    // changed: the file must come back as it was, whatever its formatting.
+    it(`writes ${label} back untouched`, () => {
+      const source = fs.readFileSync(file, 'utf8');
+      const original = parseMdx(source, { strict: false, richtext });
+      if (original.skipped.length > 0) return; // the editor refuses these
+      const opened = parseMdx(source, { strict: false, richtext, ensureIds: true });
+      const saved = puckToMdx(opened.data, opened.frontmatter, { ...gen, original });
+      expect(saved).toBe(original.layout.source.trimEnd() + '\n');
+    });
+
     it(`round-trips ${label}`, () => {
       const source = fs.readFileSync(file, 'utf8');
 

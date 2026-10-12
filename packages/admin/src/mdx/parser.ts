@@ -23,6 +23,39 @@ export interface ParsedMdx {
   frontmatter: Frontmatter;
   /** Empty unless the source contained content this format cannot represent. */
   skipped: SkippedLine[];
+  /** Where each part came from in the source — what lets a save keep it. */
+  layout: SourceLayout;
+}
+
+/** A stretch of the (line-ending-normalised) source, as offsets into it. */
+export interface SourceSpan {
+  start: number;
+  end: number;
+}
+
+/**
+ * A block's place in the source: from the start of its first line, so it
+ * carries its own indentation, to the end of its closing tag. `children` runs
+ * parallel to the block's slot children, and is empty for any other block.
+ */
+export interface BlockSpan extends SourceSpan {
+  children: BlockSpan[];
+}
+
+/**
+ * Where a parsed document's parts sit in its source. The generator writes an
+ * unchanged part back as this text rather than in its own form, so opening a
+ * hand-formatted page and saving it is not a reformatting commit.
+ */
+export interface SourceLayout {
+  /** The source, BOM and \r gone — what every offset here counts in. */
+  source: string;
+  /** The YAML block including both `---` lines, not the newline after. */
+  frontmatter?: SourceSpan;
+  /** From the first import statement to the end of the last. */
+  imports?: SourceSpan;
+  /** Parallel to `data.content`. */
+  blocks: BlockSpan[];
 }
 
 export class UnrepresentableContentError extends Error {
@@ -67,6 +100,18 @@ export interface ParseOptions {
    * is visible rather than silent.
    */
   pageFieldKeys?: readonly string[];
+
+  /**
+   * Give every block a unique `id`, minting `Type-uuid` (Puck's own shape)
+   * where one is missing or repeated. The editor needs this: Puck keys and
+   * looks blocks up by `props.id`, and a hand-written page has none — every
+   * lookup then found the same block, and the canvas showed the page's last
+   * block once per block, with no error. A minted id reaches the file only
+   * with an edit to its block; an untouched block is saved as its original
+   * text (see GenerateOptions.original), and gets a fresh id next time.
+   * Off by default, so a read that never saves does not invent them.
+   */
+  ensureIds?: boolean;
 }
 
 /**
@@ -101,8 +146,18 @@ export function parseMdx(source: string, options: ParseOptions): ParsedMdx {
   const fm = mdxString.match(/^---\n[\s\S]*?\n---\n?/);
   const offset = fm ? fm[0].split('\n').length - 1 : 0;
 
+  // gray-matter's body is what follows the block, so it is a suffix of the
+  // source and its offsets are the source's, shifted by this much.
+  const bodyStart = mdxString.endsWith(mdxContent) ? mdxString.length - mdxContent.length : 0;
+  const layout: SourceLayout = {
+    source: mdxString,
+    frontmatter: fm ? { start: 0, end: fm[0].replace(/\n$/, '').length } : undefined,
+    blocks: [],
+  };
+
   const skipped: SkippedLine[] = [];
-  const components = parseBlocks(mdxContent, skipped, offset) as any[];
+  const components = parseBlocks(mdxContent, skipped, offset, layout, bodyStart) as any[];
+  if (options.ensureIds) ensureIds(components);
   const content = options.richtext === false
     ? components
     : components.map(c => convertRichtextFields(c, options.richtext as RichtextFields));
@@ -134,7 +189,25 @@ export function parseMdx(source: string, options: ParseOptions): ParsedMdx {
     } as Data,
     frontmatter,
     skipped,
+    layout,
   };
+}
+
+/**
+ * Mint an id for every block, slot children included, whose id is missing,
+ * not a string, or already taken. The first holder of an id keeps it, so an
+ * id a page uses as an anchor survives; only its copies are renamed.
+ */
+function ensureIds(blocks: any[], seen = new Set<string>()): void {
+  for (const block of blocks) {
+    if (!block || typeof block !== 'object' || !block.props) continue;
+    const id = block.props.id;
+    if (typeof id !== 'string' || id === '' || seen.has(id)) {
+      block.props.id = `${block.type}-${crypto.randomUUID()}`;
+    }
+    seen.add(block.props.id);
+    if (Array.isArray(block.props.children)) ensureIds(block.props.children, seen);
+  }
 }
 
 /** unified's parse is synchronous; only run/process are not. */
@@ -581,6 +654,8 @@ function parseBlocks(
   body: string,
   skipped: Array<{ line: number; text: string }>,
   offset = 0,
+  layout?: SourceLayout,
+  bodyStart = 0,
 ): unknown[] {
   const report = (line: number, text: string) => skipped.push({ line: line + offset, text });
 
@@ -597,13 +672,26 @@ function parseBlocks(
   }
 
   const blocks: unknown[] = [];
+  let imports: SourceSpan | undefined;
+  let importsKeepable = true;
   for (const node of tree.children ?? []) {
     if (node.type === 'mdxjsEsm') {
       // A page's imports say where its blocks come from — which the generator
       // works out again from the registry every time it writes the file, so
       // passing over them is lossless. `export` is not: it is reported below
       // like any other statement, because nothing regenerates it.
-      if (/^\s*import\b/.test(node.value ?? '')) continue;
+      if (/^\s*import\b/.test(node.value ?? '')) {
+        // Kept as one span only when they all come before the first block;
+        // an import further down gets none, and the imports are then written
+        // fresh rather than kept.
+        const { start, end } = node.position ?? {};
+        if (start?.offset === undefined || end?.offset === undefined || blocks.length > 0) {
+          importsKeepable = false;
+        } else {
+          imports = { start: imports?.start ?? bodyStart + start.offset, end: bodyStart + end.offset };
+        }
+        continue;
+      }
       report(node.position?.start.line ?? 0, (node.value ?? '').trim().slice(0, 120));
       continue;
     }
@@ -612,6 +700,7 @@ function parseBlocks(
       const block = isBlockElement(node);
       if (!block) reportNotABlock(node, report);
       blocks.push(toBlock(node, body, report, !block));
+      layout?.blocks.push(spanOf(node, body, bodyStart));
       continue;
     }
 
@@ -619,7 +708,23 @@ function parseBlocks(
     if (text) report(node.position?.start.line ?? 0, text.split('\n')[0].slice(0, 120));
   }
 
+  if (layout && imports && importsKeepable) layout.imports = imports;
   return blocks;
+}
+
+/**
+ * Where a block element sits in the source, its slot children's spans with
+ * it — the same elements, in the same order, that toBlock makes children of.
+ */
+function spanOf(node: MdxNode, body: string, bodyStart: number): BlockSpan {
+  const start = node.position?.start.offset ?? 0;
+  const end = node.position?.end.offset ?? start;
+  const elements = (node.children ?? []).filter(c => c.type === 'mdxJsxFlowElement');
+  return {
+    start: bodyStart + lineStartOf(body, start),
+    end: bodyStart + end,
+    children: elements.map(c => spanOf(c, body, bodyStart)),
+  };
 }
 
 /**

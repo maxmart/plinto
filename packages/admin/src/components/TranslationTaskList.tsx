@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import TranslationLog from './TranslationLog';
+import TranslationDetailModal from './TranslationDetailModal';
 import type { TranslationTask } from './translation-queue';
 import { SpinnerIcon, CheckIcon, CrossIcon, CircleIcon, SkipIcon } from './ui/icons';
 import { usePlinto } from '../context';
@@ -16,8 +18,15 @@ export default function TranslationTaskList({ tasks, sourceLang, formatLabel }: 
     `${langLabel(sourceLang)} → ${langLabel(task.targetLang)}`;
 
   const getLabel = formatLabel ?? defaultLabel;
+  // By index: the list is live, so the modal follows the task, not a copy.
+  const [viewing, setViewing] = useState<number | null>(null);
+  const viewed = viewing !== null ? tasks[viewing] : undefined;
 
   return (
+    <>
+    {viewed && (
+      <TranslationDetailModal task={viewed} label={getLabel(viewed)} onClose={() => setViewing(null)} />
+    )}
     <ul className="space-y-1">
       {tasks.map((task, i) => {
         const isActive = task.status === 'translating' || task.status === 'saving';
@@ -59,6 +68,16 @@ export default function TranslationTaskList({ tasks, sourceLang, formatLabel }: 
                   {task.error}
                 </span>
               )}
+
+              {/* What the run did, once it is over */}
+              {!isActive && task.status !== 'pending' && (task.after !== undefined || task.log.length > 0) && (
+                <button
+                  onClick={() => setViewing(i)}
+                  className="ml-auto text-xs text-blue-600 hover:text-blue-800 hover:underline flex-shrink-0"
+                >
+                  {task.after !== undefined ? 'View changes' : 'View output'}
+                </button>
+              )}
             </div>
 
             {/* Expanded log for active task */}
@@ -71,5 +90,6 @@ export default function TranslationTaskList({ tasks, sourceLang, formatLabel }: 
         );
       })}
     </ul>
+    </>
   );
 }

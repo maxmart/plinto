@@ -23,9 +23,11 @@ import { createImagePickerField } from './fields/ImagePickerField';
 import { mediaImage, RichtextImageMenu } from './fields/RichtextImage';
 import { createPageLinkField } from './fields/PageLinkField';
 import { createIconField } from './fields/IconField';
+import { createStringListField } from './fields/StringListField';
 import { wrapWithMediaUrl, getMediaPaths, type MediaResolver } from '../../blocks/components';
 import type { BlockRegistry } from '../../blocks/registry';
 import { fieldPaths } from '../../blocks/fields';
+import { placementOf, type Placement } from '../../blocks/placement';
 import { PreviewShell } from '../../preview';
 import type { AdminRuntime } from '../../runtime';
 
@@ -64,6 +66,7 @@ type RichtextSentinel = { type: 'richtext'; label?: string; contentEditable?: bo
 type MediaPickerSentinel = { type: 'media-picker'; label?: string; mediaType?: 'image' | 'video' | 'all' | 'svg'; folder?: string };
 type PageLinkSentinel = { type: 'page-link'; label?: string };
 type IconPickerSentinel = { type: 'icon-picker'; label?: string; folder?: string };
+type StringListSentinel = { type: 'string-list'; label?: string; paragraphs?: boolean };
 
 interface TransformContext {
   /** Current editing locale — used by fields that need to scope to a language. */
@@ -93,6 +96,10 @@ function transformField(field: unknown, ctx: TransformContext): unknown {
   if (f.type === 'page-link') {
     const p = f as PageLinkSentinel;
     return createPageLinkField({ label: p.label ?? 'Link', lang: ctx.lang });
+  }
+  if (f.type === 'string-list') {
+    const l = f as StringListSentinel;
+    return createStringListField({ label: l.label, paragraphs: l.paragraphs });
   }
 
   // Recurse into Puck's composite field types, so a sentinel nested inside a
@@ -192,7 +199,12 @@ const makeRootFields = (plinto: AdminRuntime, pageFile?: string) => ({
  * virtual:plinto-config, transforms field sentinels, and wraps components
  * that need media-url resolution.
  */
-function buildComponents(blocks: BlockRegistry, getMediaUrl: MediaResolver, ctx: TransformContext): Record<string, ComponentConfig<any>> {
+function buildComponents(
+  blocks: BlockRegistry,
+  getMediaUrl: MediaResolver,
+  ctx: TransformContext,
+  placement: Placement,
+): Record<string, ComponentConfig<any>> {
   const result: Record<string, ComponentConfig<any>> = {};
 
   for (const [name, component] of Object.entries(blocks)) {
@@ -212,6 +224,15 @@ function buildComponents(blocks: BlockRegistry, getMediaUrl: MediaResolver, ctx:
       );
     }
     const transformedFields = transformFields(blockConfig.fields, ctx);
+    // Each slot accepts what placement says, as an allow list alone: Puck
+    // reads a disallow list first and then ignores allow, so leaving the
+    // block's own disallow in place would undo the narrowing.
+    if (!placement.unrestricted) {
+      for (const [key, accepted] of Object.entries(placement.slots[name] ?? {})) {
+        const { disallow: _disallow, ...slot } = transformedFields[key] as Record<string, unknown>;
+        transformedFields[key] = { ...slot, allow: accepted };
+      }
+    }
 
     // Wrap render for any media-picker field the block declares — nested in
     // array/object fields included — so /media/ paths resolve to blob URLs
@@ -277,31 +298,62 @@ export interface CreateConfigOptions {
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function createConfig(plinto: AdminRuntime, options: CreateConfigOptions = {}): Config {
-  const { blocks, ops, previewShell } = plinto;
+  const { blocks, ops } = plinto;
   const { editingFile, lang = '', pageFile } = options;
+
+  const partial = editingFile ? plinto.partialForFile(editingFile.split('/').pop()!) : undefined;
+  const placement = placementOf(blocks, partial?.blocks);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return {
-    components: buildComponents(blocks, ops.getMediaUrl, { lang, getMediaUrl: ops.getMediaUrl }),
+    components: buildComponents(blocks, ops.getMediaUrl, { lang, getMediaUrl: ops.getMediaUrl }, placement),
+    // The block list offers what fits in this document: what its top level
+    // takes, then what goes inside those. Only drawn when something is
+    // narrowed, so a site without rules keeps Puck's plain list.
+    ...(placement.unrestricted ? {} : { categories: categoriesFor(placement) }),
     root: {
       fields: makeRootFields(plinto, pageFile),
       // Puck hands the root render its own props, which are the document's
       // metadata fields — forwarded so the shell tracks edits live.
-      render: ({ children, title, description, date }: {
+      render: ({ children, title, description, date, puck }: {
         children: ReactNode; title?: string; description?: string; date?: string;
-      }) => (
-        <PreviewShell
-          lang={lang}
-          interactive
-          editingFile={editingFile}
-          canvas={editingFile ? children : undefined}
-          pageFile={pageFile}
-          frontmatter={{ title, description, date }}
-        >
-          {editingFile ? null : children}
-        </PreviewShell>
-      ),
+        puck?: { renderDropZone?: ComponentType<{ zone: string; allow?: string[] }> };
+      }) => {
+        // The top level is the one drop zone without a slot field to carry
+        // an allow list, so it is drawn here with one. The zone name is the
+        // one Puck gives its own root zone, so this is that zone, narrowed.
+        const Zone = puck?.renderDropZone;
+        const canvas = !placement.unrestricted && Zone
+          ? <Zone zone="root:default-zone" allow={placement.topLevel} />
+          : children;
+        return (
+          <PreviewShell
+            lang={lang}
+            interactive
+            editingFile={editingFile}
+            canvas={editingFile ? canvas : undefined}
+            pageFile={pageFile}
+            frontmatter={{ title, description, date }}
+          >
+            {editingFile ? null : canvas}
+          </PreviewShell>
+        );
+      },
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any;
+}
+
+/**
+ * The block list, in two groups: blocks for the top level, and blocks that
+ * only go inside another. Every other block is hidden, since it has nowhere
+ * to go in this document.
+ */
+function categoriesFor(placement: Placement) {
+  const nested = placement.usable.filter(n => !placement.topLevel.includes(n));
+  return {
+    blocks: { title: 'Blocks', components: placement.topLevel },
+    ...(nested.length ? { nested: { title: 'Inside other blocks', components: nested } } : {}),
+    other: { visible: false },
+  };
 }

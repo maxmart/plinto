@@ -106,15 +106,42 @@ export function createAdminRuntime(host: AdminHost) {
   // parser and the generator take the rule as an argument precisely so it can
   // be derived somewhere a test can also reach.
   const richtextFields = richtextFieldsOf(blocks);
+
+  // The original a save is measured against, parsed once per version: the
+  // editor generates on every change to know whether the page is dirty, and
+  // the original only changes when it is saved.
+  let lastOriginal: { source: string; parsed: ParsedMdx | undefined } | undefined;
+  const parseOriginal = (source: string): ParsedMdx | undefined => {
+    if (lastOriginal?.source !== source) {
+      let parsed: ParsedMdx | undefined;
+      try {
+        parsed = parseMdx(source, { strict: false, richtext: richtextFields });
+      } catch {
+        parsed = undefined;
+      }
+      lastOriginal = { source, parsed };
+    }
+    return lastOriginal.parsed;
+  };
+
   const mdx = {
     parse: (source: string, options: Omit<ParseOptions, 'richtext' | 'pageFieldKeys'> = {}): ParsedMdx =>
       parseMdx(source, {
+        ensureIds: true,
         ...options,
         richtext: richtextFields,
         pageFieldKeys: fields.allPageFieldKeys(config),
       }),
-    generate: (data: Data, frontmatter?: Frontmatter): string =>
-      puckToMdx(data, frontmatter, { richtext: richtextFields, blockImports }),
+    /**
+     * The document as MDX. Given `original` — the file as it stands — the
+     * parts this edit left alone are written back exactly as they were.
+     */
+    generate: (data: Data, frontmatter?: Frontmatter, original?: string): string =>
+      puckToMdx(data, frontmatter, {
+        richtext: richtextFields,
+        blockImports,
+        original: original ? parseOriginal(original) : undefined,
+      }),
     richtextFields,
   };
 

@@ -26,7 +26,7 @@
  * this module's, and none of it appears in the site's code.
  */
 import {
-  createContext, useContext, useEffect, useState,
+  createContext, useContext, useEffect, useLayoutEffect, useRef, useState,
   type ReactNode,
 } from 'react';
 import { useMdx } from './mdx/runtime';
@@ -69,17 +69,17 @@ const Ctx = createContext<ShellContext>({ lang: '' });
  * exactly as it does on the real page.
  *
  * That leaves the marker with no box to hang a hover overlay on, so the overlay
- * is positioned against the site's own wrapping element instead — `:has()`
- * makes whatever that element turns out to be the positioning context, without
- * the library needing to know what it is.
+ * measures the partial's own rendered elements and covers exactly those — see
+ * PartialOverlay. It used to fill the site's wrapping element instead, which
+ * was right only while each partial had a parent of its own: a shell that put
+ * header and footer side by side under one element gave both overlays the
+ * whole page, and the footer's, drawn last, took every click.
  */
 const shellStyles = `
   .plinto-partial, .plinto-partial > [class*="DropZone"] { display: contents; }
 
-  :has(> .plinto-partial-editable) { position: relative; }
   .plinto-partial-overlay {
-    position: absolute;
-    inset: 0;
+    position: fixed;
     z-index: 50;
     display: flex;
     align-items: center;
@@ -89,9 +89,8 @@ const shellStyles = `
     opacity: 0;
     transition: opacity 0.2s ease;
   }
-  /* Descendant, not child: display:contents changes layout, not the DOM tree,
-     so the overlay is a grandchild of the site's element. */
-  :has(> .plinto-partial-editable):hover .plinto-partial-overlay { opacity: 1; }
+  /* The overlay lies over the partial, so it is what the pointer is on. */
+  .plinto-partial-overlay:hover { opacity: 1; }
   .plinto-partial-overlay > span {
     background: #2563eb;
     color: #fff;
@@ -146,11 +145,75 @@ export function usePartial(file: string): ReactNode | null {
   return (
     <div className={`plinto-partial${editable ? ' plinto-partial-editable' : ''}`}>
       <Content components={blockComponents} />
-      {editable && partial && (
-        <div className="plinto-partial-overlay" data-plinto-partial={partial.name}>
-          <span>Edit {partial.label}</span>
-        </div>
-      )}
+      {editable && partial && <PartialOverlay name={partial.name} label={partial.label} />}
+    </div>
+  );
+}
+
+/** The boxes a partial occupies: its elements', looking through any that are
+ *  `display: contents` and so have none of their own. */
+function boxesOf(parent: Element, skip: Element, out: DOMRect[] = []): DOMRect[] {
+  for (const el of Array.from(parent.children)) {
+    if (el === skip) continue;
+    if (el.ownerDocument.defaultView!.getComputedStyle(el).display === 'contents') { boxesOf(el, skip, out); continue; }
+    const r = el.getBoundingClientRect();
+    if (r.width || r.height) out.push(r);
+  }
+  return out;
+}
+
+/**
+ * The "Edit Header" cover over one partial, sized to that partial's own
+ * elements. Fixed rather than absolute, so it needs no positioned ancestor —
+ * the marker has no box, and borrowing the site's element is what let two
+ * partials share one. Re-measured whenever anything could move it.
+ */
+function PartialOverlay({ name, label }: { name: string; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const overlay = ref.current;
+    const marker = overlay?.parentElement;
+    if (!overlay || !marker) return;
+    const win = overlay.ownerDocument.defaultView!;
+
+    const place = () => {
+      const boxes = boxesOf(marker, overlay);
+      if (boxes.length === 0) { overlay.style.display = 'none'; return; }
+      const top = Math.min(...boxes.map(b => b.top));
+      const left = Math.min(...boxes.map(b => b.left));
+      const right = Math.max(...boxes.map(b => b.right));
+      const bottom = Math.max(...boxes.map(b => b.bottom));
+      Object.assign(overlay.style, {
+        display: '',
+        top: `${top}px`,
+        left: `${left}px`,
+        width: `${right - left}px`,
+        height: `${bottom - top}px`,
+      });
+    };
+
+    place();
+    // The iframe's own constructors: observers from the parent window do not
+    // watch nodes in the canvas document.
+    const resized = new win.ResizeObserver(place);
+    resized.observe(overlay.ownerDocument.body);
+    for (const el of Array.from(marker.children)) if (el !== overlay) resized.observe(el);
+    const mutated = new win.MutationObserver(place);
+    mutated.observe(marker, { childList: true, subtree: true });
+    win.addEventListener('scroll', place, true);
+    win.addEventListener('resize', place);
+    return () => {
+      resized.disconnect();
+      mutated.disconnect();
+      win.removeEventListener('scroll', place, true);
+      win.removeEventListener('resize', place);
+    };
+  }, []);
+
+  return (
+    <div ref={ref} className="plinto-partial-overlay" data-plinto-partial={name}>
+      <span>Edit {label}</span>
     </div>
   );
 }

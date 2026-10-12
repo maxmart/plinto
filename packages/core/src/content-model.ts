@@ -67,6 +67,11 @@ export interface PartialConfig {
   file: string;
   /** Label shown in the admin's Partials list. 'TopBar.mdx' -> 'Top Bar'. */
   label: string;
+  /**
+   * The blocks its top level may hold, from the site's
+   * `content.partialBlocks`. Absent: any block that may stand at a top level.
+   */
+  blocks?: string[];
 }
 
 /** A single extra frontmatter field offered by the editor's page panel. */

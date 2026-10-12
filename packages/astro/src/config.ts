@@ -115,6 +115,17 @@ export interface PlintoConfig {
      * Example: [{ label: 'News', folder: 'news/', orderBy: '-date' }]
      */
     sections?: Array<{ label: string; folder: string; orderBy?: string }>;
+    /**
+     * The blocks each partial's top level may hold, keyed by its file name.
+     * The editor offers only those, and only those can be dropped there. A
+     * partial not named here takes any block that may stand at a top level.
+     *
+     * Where a block may go *inside* other blocks is the block's own business:
+     * see `allowedIn` on its config.
+     *
+     * Example: { 'TopBar.mdx': ['Logo', 'Menu'], 'Footer.mdx': ['FooterColumns'] }
+     */
+    partialBlocks?: Record<string, string[]>;
   };
 
   /** Git configuration */
@@ -188,4 +199,4 @@ export type AstroBlockPaths = Record<string, string>;
  * here so a site describing its blocks still writes one import.
  */
 export type { BlockComponent, BlockRegistry, BlockConfig } from '@plinto/admin/blocks/registry';
-export { richtext, mediaPicker, pageLink, iconPicker } from '@plinto/admin/blocks/registry';
+export { richtext, mediaPicker, pageLink, iconPicker, stringList } from '@plinto/admin/blocks/registry';

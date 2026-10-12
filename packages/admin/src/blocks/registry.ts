@@ -79,6 +79,13 @@ export interface BlockConfig<P> {
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolveData?: (data: any, params: any) => any;
+  /**
+   * The blocks this one may be placed inside, by registry name — a MenuItem
+   * that belongs in a Menu or another MenuItem says `['Menu', 'MenuItem']`.
+   * It is then offered and accepted only in those blocks' slots, never at a
+   * page's or partial's top level. Absent: anywhere.
+   */
+  allowedIn?: string[];
 }
 
 // ── Field sentinel factories ──────────────────────────────────────────
@@ -117,4 +124,15 @@ export const iconPicker = (label: string, folder = 'icons') => ({
 export const pageLink = (label: string) => ({
   type: 'page-link' as const,
   label,
+});
+
+/**
+ * A `string[]` prop — bullet points, tags, paragraphs — edited as one textarea
+ * with an item per line, or with `paragraphs` one per blank-line-separated
+ * paragraph. The file still holds the array.
+ */
+export const stringList = (label: string, { paragraphs = false }: { paragraphs?: boolean } = {}) => ({
+  type: 'string-list' as const,
+  label,
+  paragraphs,
 });
